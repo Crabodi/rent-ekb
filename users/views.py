@@ -29,14 +29,16 @@ class RegisterView(generics.CreateAPIView):
 
 
 class ProfileView(APIView):
-    """Профиль пользователя"""
+    """Профиль пользователя (просмотр и редактирование)"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Получить профиль"""
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
     
     def patch(self, request):
+        """Обновить профиль"""
         serializer = UserSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()

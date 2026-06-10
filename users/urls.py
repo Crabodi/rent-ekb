@@ -7,9 +7,8 @@ from rest_framework_simplejwt.views import (
 )
 from . import views
 
-# Создаем роутер для API
 router = DefaultRouter()
-# Если у вас есть ViewSet для пользователей, раскомментируйте:
+# Регистрируем ViewSet для пользователей (создадим позже)
 # router.register(r'users', views.UserViewSet, basename='user')
 
 urlpatterns = [

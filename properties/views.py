@@ -11,6 +11,7 @@ from .serializers import (
     PropertyCreateSerializer
 )
 
+
 class CityViewSet(viewsets.ReadOnlyModelViewSet):
     """API для работы с городами"""
     queryset = City.objects.filter(is_active=True)
@@ -18,6 +19,7 @@ class CityViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
+
 
 class DistrictViewSet(viewsets.ReadOnlyModelViewSet):
     """API для работы с районами"""
@@ -33,6 +35,7 @@ class DistrictViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(city_id=city_id)
         return queryset
 
+
 class PropertyViewSet(viewsets.ModelViewSet):
     """API для работы с объектами недвижимости"""
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -45,9 +48,15 @@ class PropertyViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return PropertyListSerializer
-        elif self.action == 'create' or self.action == 'update' or self.action == 'partial_update':
+        elif self.action in ['create', 'update', 'partial_update']:
             return PropertyCreateSerializer
         return PropertyDetailSerializer
+    
+    def get_serializer_context(self):
+        """Добавляем request в контекст сериализатора"""
+        context = super().get_serializer_context()
+        context.update({'request': self.request})
+        return context
     
     def get_queryset(self):
         queryset = Property.objects.filter(is_active=True)
@@ -67,20 +76,20 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 models.Q(price_per_month__lte=max_price)
             )
         
-        # Дополнительная фильтрация по датам (если нужно)
-        start_date = self.request.GET.get('start_date', None)
-        end_date = self.request.GET.get('end_date', None)
-
         return queryset
     
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my_properties(self, request):
         """Получить объявления текущего пользователя"""
         properties = Property.objects.filter(owner=request.user)
-        serializer = PropertyListSerializer(properties, many=True)
+        serializer = PropertyListSerializer(
+            properties, 
+            many=True, 
+            context={'request': request}
+        )
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
