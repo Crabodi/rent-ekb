@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+
+{% block title %}Просмотр объявления - Рент.ру{% endblock %}
+
+{% block extra_css %}
+<style>
+    .carousel-item img {
+        height: 400px;
+        object-fit: cover;
+    }
+    .property-info {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .booking-form {
+        position: sticky;
+        top: 20px;
+    }
+    .price-large {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Галерея фотографий -->
+        <div class="col-md-8">
+            <div id="propertyCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+                <div class="carousel-inner" id="carouselImages">
+                    <div class="carousel-item active">
+                        <img src="https://via.placeholder.com/800x400?text=Загрузка..." class="d-block w-100" alt="Загрузка">
+                    </div>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                </button>
+            </div>
+            
+            <div class="property-info">
+                <h2 id="propertyTitle">Загрузка...</h2>
+                <p class="text-muted" id="propertyLocation">
+                    <i class="bi bi-geo-alt"></i> 
+                </p>
+                <hr>
+                <h4>Описание</h4>
+                <p id="propertyDescription"></p>
+                <hr>
+                <h4>Характеристики</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Тип объекта:</strong> <span id="propertyType"></span></p>
+                        <p><strong>Комнат:</strong> <span id="propertyRooms"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Срок аренды:</strong> <span id="propertyRentalTerm"></span></p>
+                        <p><strong>Адрес:</strong> <span id="propertyAddress"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Форма бронирования -->
+        <div class="col-md-4">
+            <div class="card booking-form">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Бронирование</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="price-large" id="propertyPrice">0 ₽</div>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                        <form id="bookingForm">
+                            <div class="mb-3">
+                                <label class="form-label">Дата заезда</label>
+                                <input type="date" class="form-control" id="startDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Дата выезда</label>
+                                <input type="date" class="form-control" id="endDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Комментарий</label>
+                                <textarea class="form-control" id="comment" rows="3" placeholder="Ваши пожелания..."></textarea>
+                            </div>
+                            <div id="pricePreview" class="alert alert-info" style="display: none;">
+                                <strong>Итого: <span id="totalPrice">0</span> ₽</strong>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100" id="bookBtn">
+                                <i class="bi bi-calendar-check"></i> Забронировать
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-info-circle"></i> Для бронирования необходимо 
+                            <a href="{% url 'login' %}">войти</a> или 
+                            <a href="{% url 'register' %}">зарегистрироваться</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Информация о владельце -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Владелец</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <i class="bi bi-person-circle" style="font-size: 48px;"></i>
+                        <h5 class="mt-2" id="ownerName"></h5>
+                        <p><i class="bi bi-phone"></i> <span id="ownerPhone"></span></p>
+                        <p><i class="bi bi-envelope"></i> <span id="ownerEmail"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Ждем полной загрузки jQuery и DOM
+$(document).ready(function() {
+    console.log('Detail page loaded');
+    
+    const propertyId = window.location.pathname.split('/')[2];
+    console.log('Property ID:', propertyId);
+    
+    // Загрузка данных об объявлении
+    function loadPropertyDetails() {
+        $.ajax({
+            url: '/api/properties/' + propertyId + '/',
+            method: 'GET',
+            success: function(property) {
+                console.log('Property loaded:', property);
+                displayPropertyDetails(property);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading property:', error);
+                $('#propertyTitle').text('Ошибка загрузки');
+            }
+        });
+    }
+    
+    // Отображение данных
+    function displayPropertyDetails(property) {
+        // Основная информация
+        $('#propertyTitle').text(property.title || 'Без названия');
+        $('#propertyLocation').html('<i class="bi bi-geo-alt"></i> ' + (property.location_display || 'Адрес не указан'));
+        $('#propertyDescription').text(property.description || 'Описание отсутствует');
+        $('#propertyAddress').text(property.address || 'Не указан');
+        $('#propertyRooms').text(property.rooms || 0);
+        $('#propertyPrice').text(property.price_display || 'Цена не указана');
+        
+        // Тип объекта
+        const typeMap = {
+            'apartment': 'Квартира',
+            'house': 'Дом',
+            'room': 'Комната',
+            'studio': 'Студия'
+        };
+        $('#propertyType').text(typeMap[property.property_type] || property.property_type);
+        
+        // Срок аренды
+        const termMap = {
+            'daily': 'Посуточно',
+            'long_term': 'Длительная',
+            'both': 'Оба варианта'
+        };
+        $('#propertyRentalTerm').text(termMap[property.rental_term] || property.rental_term);
+        
+        // Владелец
+        $('#ownerName').text(property.owner_name || 'Не указан');
+        $('#ownerPhone').text(property.owner_phone || 'Не указан');
+        $('#ownerEmail').text(property.owner_email || 'Не указан');
+        
+        // Фотографии
+        if (property.images && property.images.length > 0) {
+            const carouselInner = $('#carouselImages');
+            carouselInner.empty();
+            property.images.forEach((image, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                carouselInner.append(`
+                    <div class="carousel-item ${isActive}">
+                        <img src="${image.image_url}" class="d-block w-100" alt="Фото ${index + 1}" style="height: 400px; object-fit: cover;">
+                    </div>
+                `);
+            });
+        } else {
+            // Нет фото - показываем заглушку
+            $('#carouselImages').html(`
+                <div class="carousel-item active">
+                    <img src="https://via.placeholder.com/800x400?text=Нет+фотографий" class="d-block w-100" alt="Нет фото">
+                </div>
+            `);
+        }
+        
+        // Сохраняем данные о ценах для расчета
+        $('#propertyPriceData').data('pricePerDay', property.price_per_day);
+        $('#propertyPriceData').data('pricePerMonth', property.price_per_month);
+        $('#propertyPriceData').data('rentalTerm', property.rental_term);
+    }
+    
+    // Расчет стоимости
+    function calculatePrice() {
+        const startDate = $('#startDate').val();
+        const endDate = $('#endDate').val();
+        
+        if (startDate && endDate && startDate < endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+            
+            if (days > 0) {
+                // Получаем данные о ценах из API
+                $.ajax({
+                    url: '/api/properties/' + propertyId + '/',
+                    method: 'GET',
+                    success: function(property) {
+                        let total = 0;
+                        if (property.price_per_day && (property.rental_term === 'daily' || property.rental_term === 'both')) {
+                            total = days * parseFloat(property.price_per_day);
+                            $('#pricePreview').show();
+                            $('#totalPrice').text(total.toLocaleString('ru-RU'));
+                        } else if (property.price_per_month && property.rental_term === 'long_term') {
+                            const months = Math.ceil(days / 30);
+                            total = months * parseFloat(property.price_per_month);
+                            $('#pricePreview').show();
+                            $('#totalPrice').text(total.toLocaleString('ru-RU'));
+                        }
+                    }
+                });
+                return true;
+            }
+        }
+        $('#pricePreview').hide();
+        return false;
+    }
+    
+    // Отправка бронирования
+    $('#bookingForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const bookingData = {
+            property_obj: parseInt(propertyId),
+            start_date: $('#startDate').val(),
+            end_date: $('#endDate').val(),
+            tenant_comment: $('#comment').val()
+        };
+        
+        console.log('Sending booking:', bookingData);
+        
+        $.ajax({
+            url: '/api/bookings/',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            data: JSON.stringify(bookingData),
+            success: function(response) {
+                alert('Бронирование создано! Ожидайте подтверждения.');
+                window.location.href = '/my-bookings/';
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON;
+                let errorMessage = 'Ошибка при бронировании';
+                if (error && error.detail) {
+                    errorMessage = error.detail;
+                } else if (error && error.non_field_errors) {
+                    errorMessage = error.non_field_errors[0];
+                }
+                alert(errorMessage);
+            }
+        });
+    });
+    
+    // Отслеживание изменения дат
+    $('#startDate, #endDate').on('change', calculatePrice);
+    
+    // Загружаем данные
+    loadPropertyDetails();
+});
+
+// Функция для получения CSRF токена
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

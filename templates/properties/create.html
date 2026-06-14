@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block title %}Создать объявление - Рент.ру{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Создание объявления</h4>
+                </div>
+                <div class="card-body">
+                    <form id="createPropertyForm">
+                        <div class="mb-3">
+                            <label class="form-label">Заголовок *</label>
+                            <input type="text" class="form-control" id="title" required>
+                            <div class="form-text">Например: "Уютная квартира в центре"</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Тип объекта *</label>
+                                <select class="form-select" id="propertyType" required>
+                                    <option value="">Выберите...</option>
+                                    <option value="apartment">Квартира</option>
+                                    <option value="house">Дом</option>
+                                    <option value="room">Комната</option>
+                                    <option value="studio">Студия</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Количество комнат *</label>
+                                <input type="number" class="form-control" id="rooms" min="1" max="10" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Город *</label>
+                                <select class="form-select" id="city" required>
+                                    <option value="">Выберите город...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Район</label>
+                                <select class="form-select" id="district">
+                                    <option value="">Выберите район...</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Адрес *</label>
+                            <input type="text" class="form-control" id="address" required>
+                            <div class="form-text">Улица, номер дома</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Описание *</label>
+                            <textarea class="form-control" id="description" rows="5" required></textarea>
+                            <div class="form-text">Опишите особенности объекта, ремонт, инфраструктуру</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Срок аренды *</label>
+                            <select class="form-select" id="rentalTerm" required>
+                                <option value="">Выберите...</option>
+                                <option value="daily">Посуточно</option>
+                                <option value="long_term">Длительная</option>
+                                <option value="both">Оба варианта</option>
+                            </select>
+                        </div>
+                        
+                        <div id="dailyPriceBlock" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Цена за сутки (₽)</label>
+                                <input type="number" class="form-control" id="pricePerDay">
+                            </div>
+                        </div>
+                        
+                        <div id="longTermPriceBlock" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Цена за месяц (₽)</label>
+                                <input type="number" class="form-control" id="pricePerMonth">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Фотографии</label>
+                            <input type="file" class="form-control" id="photos" multiple accept="image/*">
+                            <div class="form-text">Вы можете загрузить несколько фотографий</div>
+                        </div>
+                        
+                        <div id="photoPreview" class="row mt-2"></div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Создать объявление
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Загрузка городов
+$.get(`${API_URL}cities/`, function(data) {
+    const citySelect = $('#city');
+    data.forEach(city => {
+        citySelect.append(`<option value="${city.id}">${city.name}</option>`);
+    });
+});
+
+// Загрузка районов при выборе города
+$('#city').change(function() {
+    const cityId = $(this).val();
+    const districtSelect = $('#district');
+    districtSelect.html('<option value="">Выберите район...</option>');
+    
+    if (cityId) {
+        $.get(`${API_URL}districts/?city=${cityId}`, function(data) {
+            data.forEach(district => {
+                districtSelect.append(`<option value="${district.id}">${district.name}</option>`);
+            });
+        });
+    }
+});
+
+// Показ/скрытие полей цены в зависимости от срока аренды
+$('#rentalTerm').change(function() {
+    const term = $(this).val();
+    $('#dailyPriceBlock').hide();
+    $('#longTermPriceBlock').hide();
+    
+    if (term === 'daily') {
+        $('#dailyPriceBlock').show();
+    } else if (term === 'long_term') {
+        $('#longTermPriceBlock').show();
+    } else if (term === 'both') {
+        $('#dailyPriceBlock').show();
+        $('#longTermPriceBlock').show();
+    }
+});
+
+// Предпросмотр фотографий
+$('#photos').change(function(e) {
+    const preview = $('#photoPreview');
+    preview.empty();
+    
+    const files = e.target.files;
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.append(`
+                <div class="col-md-3 mb-2">
+                    <img src="${e.target.result}" class="img-thumbnail" style="height: 100px; object-fit: cover;">
+                </div>
+            `);
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+// Отправка формы
+$('#createPropertyForm').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('title', $('#title').val());
+    formData.append('property_type', $('#propertyType').val());
+    formData.append('rooms', $('#rooms').val());
+    formData.append('city', $('#city').val());
+    formData.append('district', $('#district').val() || '');
+    formData.append('address', $('#address').val());
+    formData.append('description', $('#description').val());
+    formData.append('rental_term', $('#rentalTerm').val());
+    formData.append('price_per_day', $('#pricePerDay').val() || '');
+    formData.append('price_per_month', $('#pricePerMonth').val() || '');
+    
+    // Добавляем фотографии
+    const files = $('#photos')[0].files;
+    for (let i = 0; i < files.length; i++) {
+        formData.append('photos', files[i]);
+    }
+    
+    $.ajax({
+        url: `${API_URL}properties/`,
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        processData: false,
+        contentType: false,
+        data: formData,
+        success: function(response) {
+            showNotification('Объявление успешно создано!', 'success');
+            setTimeout(() => {
+                window.location.href = '/my-properties/';
+            }, 2000);
+        },
+        error: function(xhr) {
+            const errors = xhr.responseJSON;
+            let errorMessage = 'Ошибка при создании объявления';
+            if (errors) {
+                errorMessage = Object.values(errors).flat().join('\n');
+            }
+            showNotification(errorMessage, 'danger');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои объявления - Рент.ру{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Мои объявления</h2>
+        <a href="{% url 'create_property' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Добавить объявление
+        </a>
+    </div>
+    
+    <div id="propertiesList">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    console.log('My properties page loaded');
+    loadMyProperties();
+    
+    function loadMyProperties() {
+        $.ajax({
+            url: '/api/properties/my_properties/',
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(data) {
+                console.log('Loaded properties:', data.length);
+                displayProperties(data);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading properties:', error);
+                $('#propertiesList').html(`
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Ошибка загрузки объявлений. Пожалуйста, авторизуйтесь.
+                    </div>
+                `);
+            }
+        });
+    }
+    
+    function displayProperties(properties) {
+        if (!properties || properties.length === 0) {
+            $('#propertiesList').html(`
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle"></i> 
+                    У вас пока нет объявлений.
+                    <a href="{% url 'create_property' %}" class="alert-link">Создать первое объявление</a>
+                </div>
+            `);
+            return;
+        }
+        
+        let html = '<div class="row">';
+        properties.forEach(property => {
+            let imageUrl = 'https://via.placeholder.com/300x200?text=Нет+фото';
+            if (property.main_image) {
+                imageUrl = property.main_image;
+            }
+            
+            const statusBadge = property.is_active ? 
+                '<span class="badge bg-success">Активно</span>' : 
+                '<span class="badge bg-secondary">Неактивно</span>';
+            
+            html += `
+                <div class="col-md-4 mb-4">
+                    <div class="card property-card h-100">
+                        <img src="${imageUrl}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title">${escapeHtml(property.title)}</h5>
+                            <p class="price">${property.price_display || 'Цена не указана'}</p>
+                            <p>${statusBadge}</p>
+                            <div class="btn-group w-100">
+                                <a href="/property/${property.id}/" class="btn btn-outline-primary btn-sm">Просмотр</a>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteProperty(${property.id})">Удалить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        $('#propertiesList').html(html);
+    }
+    
+    window.deleteProperty = function(id) {
+        if (confirm('Вы уверены, что хотите удалить это объявление?')) {
+            $.ajax({
+                url: `/api/properties/${id}/`,
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function() {
+                    showNotification('Объявление удалено', 'success');
+                    loadMyProperties();
+                },
+                error: function() {
+                    showNotification('Ошибка при удалении', 'danger');
+                }
+            });
+        }
+    };
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+});
+</script>
+{% endblock %}

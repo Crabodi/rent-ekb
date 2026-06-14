@@ -18,12 +18,28 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth.views import LoginView, LogoutView
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('properties.urls')),  # API для недвижимости
-    path('api/users/', include('users.urls')),  # Потом создадим
-    path('api/bookings/', include('bookings.urls')),  # Потом создадим    
+
+    # API маршруты
+    path('api/', include('properties.urls')),  
+    path('api/users/', include('users.urls')),  
+    path('api/bookings/', include('bookings.urls')), 
+
+    # Фронтенд маршруты
+    path('', views.HomeView.as_view(), name='home'),
+    path('login/', views.LoginView.as_view(), name='login'),
+    path('logout/', views.LogoutView.as_view(), name='logout'),
+    path('register/', views.RegisterView.as_view(), name='register'),
+    path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('my-properties/', views.MyPropertiesView.as_view(), name='my_properties'),
+    path('my-bookings/', views.MyBookingsView.as_view(), name='my_bookings'),
+    path('property/<int:pk>/', views.PropertyDetailView.as_view(), name='property_detail'),
+    path('property/create/', views.CreatePropertyView.as_view(), name='create_property'),
+      
 ]
 
 if settings.DEBUG:

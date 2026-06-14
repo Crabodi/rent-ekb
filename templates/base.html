@@ -1,0 +1,293 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Рент.ру - Аренда недвижимости{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        /* Ваши стили */
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+            margin-bottom: 40px;
+        }
+        .property-card {
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+        }
+        .property-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .property-image {
+            height: 200px;
+            object-fit: cover;
+        }
+        .price {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 40px 0;
+            margin-top: 60px;
+        }
+        .search-filters {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="bi bi-building"></i> Рент.ру
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="bi bi-house"></i> Главная
+                        </a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'my_properties' %}">
+                                <i class="bi bi-building"></i> Мои объявления
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'my_bookings' %}">
+                                <i class="bi bi-calendar-check"></i> Мои бронирования
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'profile' %}">Профиль</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Выйти</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">
+                                <i class="bi bi-box-arrow-in-right"></i> Войти
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-primary text-white" href="{% url 'register' %}">
+                                <i class="bi bi-person-plus"></i> Регистрация
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Рент.ру</h5>
+                    <p>Сервис аренды недвижимости в Екатеринбурге и других городах России</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Быстрые ссылки</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'home' %}" class="text-decoration-none">Поиск недвижимости</a></li>
+                        <li><a href="#" class="text-decoration-none">Как арендовать</a></li>
+                        <li><a href="#" class="text-decoration-none">Как сдать</a></li>
+                        <li><a href="#" class="text-decoration-none">Помощь</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Контакты</h5>
+                    <p><i class="bi bi-envelope"></i> info@rent.ru</p>
+                    <p><i class="bi bi-telephone"></i> +7 (343) 123-45-67</p>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2024 Рент.ру. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Получаем токен из контекста Django
+        const ACCESS_TOKEN = "{{ access_token|default:'' }}";
+        const REFRESH_TOKEN = "{{ request.session.refresh_token|default:'' }}";
+        const API_URL = '/api/';
+        
+        // Функция для получения CSRF токена
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Функция для обновления токена
+        async function refreshAccessToken() {
+            if (!REFRESH_TOKEN) return false;
+            
+            try {
+                const response = await fetch(API_URL + 'users/token/refresh/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({refresh: REFRESH_TOKEN})
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Сохраняем новый токен
+                    sessionStorage.setItem('access_token', data.access);
+                    // Обновляем страницу для получения нового токена в контексте
+                    location.reload();
+                    return true;
+                }
+            } catch (error) {
+                console.error('Token refresh failed:', error);
+            }
+            return false;
+        }
+        
+        // Функция для выполнения AJAX запросов с автоматическим обновлением токена
+        async function apiRequest(url, options = {}) {
+            const makeRequest = async (token) => {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    ...options.headers
+                };
+                
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+                
+                const response = await fetch(url, {
+                    ...options,
+                    headers: headers
+                });
+                
+                if (response.status === 401) {
+                    // Токен просрочен, пробуем обновить
+                    const refreshed = await refreshAccessToken();
+                    if (refreshed) {
+                        // Повторяем запрос с новым токеном
+                        const newToken = sessionStorage.getItem('access_token');
+                        return makeRequest(newToken);
+                    }
+                }
+                
+                return response;
+            };
+            
+            let token = sessionStorage.getItem('access_token') || ACCESS_TOKEN;
+            return makeRequest(token);
+        }
+        
+        // Настройка глобального AJAX с перехватом ошибки 401
+        $(document).ajaxError(function(event, jqXHR, settings, error) {
+            if (jqXHR.status === 401) {
+                console.log('Token expired, refreshing...');
+                refreshAccessToken().then(refreshed => {
+                    if (refreshed) {
+                        // Повторяем оригинальный запрос
+                        $.ajax(settings);
+                    } else {
+                        window.location.href = '/login/';
+                    }
+                });
+                return false;
+            }
+        });
+        
+        // Настройка AJAX с авторизацией
+        $(document).ajaxSend(function(event, xhr, settings) {
+            // CSRF токен
+            if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+            }
+            
+            // JWT токен для API запросов
+            if (settings.url.includes('/api/')) {
+                let token = sessionStorage.getItem('access_token') || ACCESS_TOKEN;
+                if (token) {
+                    xhr.setRequestHeader("Authorization", "Bearer " + token);
+                }
+            }
+        });
+        
+        // Инициализация - сохраняем токен из Django в sessionStorage
+        if (ACCESS_TOKEN && !sessionStorage.getItem('access_token')) {
+            sessionStorage.setItem('access_token', ACCESS_TOKEN);
+        }
+        if (REFRESH_TOKEN && !sessionStorage.getItem('refresh_token')) {
+            sessionStorage.setItem('refresh_token', REFRESH_TOKEN);
+        }
+        
+        // Функция для уведомлений
+        function showNotification(message, type = 'success') {
+            const alert = $(`
+                <div class="alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3" 
+                     style="z-index: 9999; min-width: 300px;" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+            $('body').append(alert);
+            setTimeout(() => {
+                alert.fadeOut(300, function() { $(this).remove(); });
+            }, 3000);
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Рент.ру - Поиск недвижимости{% endblock %}
+
+{% block content %}
+<!-- Hero секция -->
+<div class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4">Найдите идеальное жилье</h1>
+        <p class="lead">Более 1000 объектов недвижимости по всей России</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Форма поиска и фильтрации -->
+    <div class="search-filters">
+        <h4 class="mb-3"><i class="bi bi-search"></i> Поиск недвижимости</h4>
+        <form id="searchForm">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Дата заезда</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Дата выезда</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Мин. цена</label>
+                    <input type="number" class="form-control" id="minPrice" name="min_price" placeholder="от 0 ₽">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Макс. цена</label>
+                    <input type="number" class="form-control" id="maxPrice" name="max_price" placeholder="до любой">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Комнат</label>
+                    <select class="form-select" id="rooms" name="rooms">
+                        <option value="">Любое</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4+</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Тип объекта</label>
+                    <select class="form-select" id="propertyType" name="property_type">
+                        <option value="">Все</option>
+                        <option value="apartment">Квартира</option>
+                        <option value="house">Дом</option>
+                        <option value="room">Комната</option>
+                        <option value="studio">Студия</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Город</label>
+                    <select class="form-select" id="city" name="city">
+                        <option value="">Все города</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Район</label>
+                    <select class="form-select" id="district" name="district">
+                        <option value="">Все районы</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Срок аренды</label>
+                    <select class="form-select" id="rentalTerm" name="rental_term">
+                        <option value="">Любой</option>
+                        <option value="daily">Посуточно</option>
+                        <option value="long_term">Длительная</option>
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Найти
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Результаты поиска -->
+    <div id="propertiesList">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Загрузка городов
+$.get(`${API_URL}cities/`, function(data) {
+    const citySelect = $('#city');
+    data.forEach(city => {
+        citySelect.append(`<option value="${city.id}">${city.name}</option>`);
+    });
+});
+
+// Загрузка районов при выборе города
+$('#city').change(function() {
+    const cityId = $(this).val();
+    const districtSelect = $('#district');
+    districtSelect.html('<option value="">Все районы</option>');
+    
+    if (cityId) {
+        $.get(`${API_URL}districts/?city=${cityId}`, function(data) {
+            data.forEach(district => {
+                districtSelect.append(`<option value="${district.id}">${district.name}</option>`);
+            });
+        });
+    }
+});
+
+// Загрузка объявлений
+function loadProperties() {
+    const params = {
+        start_date: $('#startDate').val(),
+        end_date: $('#endDate').val(),
+        min_price: $('#minPrice').val(),
+        max_price: $('#maxPrice').val(),
+        rooms: $('#rooms').val(),
+        property_type: $('#propertyType').val(),
+        city: $('#city').val(),
+        district: $('#district').val(),
+        rental_term: $('#rentalTerm').val()
+    };
+    
+    // Удаляем пустые параметры
+    Object.keys(params).forEach(key => {
+        if (!params[key]) delete params[key];
+    });
+    
+    $.get(`${API_URL}properties/`, params, function(data) {
+        displayProperties(data);
+    }).fail(function(error) {
+        console.error('Ошибка загрузки:', error);
+        $('#propertiesList').html('<div class="alert alert-danger">Ошибка загрузки объявлений</div>');
+    });
+}
+
+// Отображение объявлений
+function displayProperties(properties) {
+    if (properties.length === 0) {
+        $('#propertiesList').html(`
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle"></i> Ничего не найдено. Попробуйте изменить параметры поиска.
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '<div class="row">';
+    properties.forEach(property => {
+        const imageUrl = property.main_image || '/static/images/no-image.png';
+        html += `
+            <div class="col-md-4">
+                <div class="card property-card h-100">
+                    <img src="${imageUrl}" class="card-img-top property-image" alt="${property.title}">
+                    <div class="card-body">
+                        <h5 class="card-title">${property.title}</h5>
+                        <p class="card-text text-muted">
+                            <i class="bi bi-geo-alt"></i> ${property.location_display}
+                        </p>
+                        <p class="card-text">
+                            <i class="bi bi-door-open"></i> ${property.rooms} комн. | 
+                            <i class="bi bi-building"></i> ${getPropertyType(property.property_type)}
+                        </p>
+                        <p class="price">${property.price_display}</p>
+                        <a href="/property/${property.id}/" class="btn btn-primary w-100">Подробнее</a>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    $('#propertiesList').html(html);
+}
+
+function getPropertyType(type) {
+    const types = {
+        'apartment': 'Квартира',
+        'house': 'Дом',
+        'room': 'Комната',
+        'studio': 'Студия'
+    };
+    return types[type] || type;
+}
+
+// Обработка отправки формы
+$('#searchForm').submit(function(e) {
+    e.preventDefault();
+    loadProperties();
+});
+
+// Загрузка при открытии страницы
+$(document).ready(function() {
+    loadProperties();
+});
+</script>
+{% endblock %}

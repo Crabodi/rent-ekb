@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои бронирования - Рент.ру{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Мои бронирования</h2>
+    
+    <ul class="nav nav-tabs mb-4" id="bookingTabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-status="all">Все</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-status="pending">Ожидают</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-status="confirmed">Подтверждены</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-status="cancelled">Отменены</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-status="completed">Завершены</button>
+        </li>
+    </ul>
+    
+    <div id="bookingsList">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    console.log('My bookings page loaded');
+    let currentStatus = 'all';
+    
+    function loadMyBookings() {
+        // Показываем загрузку
+        $('#bookingsList').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            </div>
+        `);
+        
+        $.ajax({
+            url: API_URL + 'bookings/',
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(data) {
+                console.log('Raw response:', data);
+                
+                // Проверяем формат данных
+                let bookings = [];
+                if (Array.isArray(data)) {
+                    bookings = data;
+                } else if (data.results && Array.isArray(data.results)) {
+                    // Для пагинированных ответов
+                    bookings = data.results;
+                } else if (data.data && Array.isArray(data.data)) {
+                    bookings = data.data;
+                } else {
+                    console.warn('Unexpected data format:', data);
+                }
+                
+                console.log('Loaded bookings:', bookings.length);
+                displayBookings(bookings);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading bookings:', error);
+                console.error('Status:', status);
+                console.error('Response:', xhr.responseText);
+                $('#bookingsList').html(`
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Ошибка загрузки бронирований: ${error}
+                        <br><small>Пожалуйста, попробуйте позже или войдите заново.</small>
+                    </div>
+                `);
+            }
+        });
+    }
+    
+    function displayBookings(bookings) {
+        // Фильтруем по статусу
+        let filteredBookings = bookings;
+        if (currentStatus !== 'all') {
+            filteredBookings = bookings.filter(b => b.status === currentStatus);
+        }
+        
+        if (!filteredBookings || filteredBookings.length === 0) {
+            $('#bookingsList').html(`
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle"></i> 
+                    У вас пока нет бронирований со статусом "${getStatusText(currentStatus)}".
+                </div>
+            `);
+            return;
+        }
+        
+        let html = '<div class="list-group">';
+        filteredBookings.forEach(booking => {
+            const statusClass = {
+                'pending': 'warning',
+                'confirmed': 'success',
+                'cancelled': 'danger',
+                'completed': 'info'
+            }[booking.status] || 'secondary';
+            
+            const statusText = {
+                'pending': 'Ожидает подтверждения',
+                'confirmed': 'Подтверждено',
+                'cancelled': 'Отменено',
+                'completed': 'Завершено'
+            }[booking.status] || booking.status;
+            
+            // Получаем URL изображения
+            let imageUrl = 'https://via.placeholder.com/100x100?text=Нет+фото';
+            if (booking.property_main_image) {
+                imageUrl = booking.property_main_image;
+            } else if (booking.property_details && booking.property_details.main_image) {
+                imageUrl = booking.property_details.main_image;
+            }
+            
+            // Получаем название объекта
+            let propertyTitle = 'Объект не указан';
+            if (booking.property_title) {
+                propertyTitle = booking.property_title;
+            } else if (booking.property_details && booking.property_details.title) {
+                propertyTitle = booking.property_details.title;
+            }
+            
+            html += `
+                <div class="list-group-item">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <img src="${imageUrl}" class="img-fluid rounded" style="max-height: 80px; object-fit: cover; width: 100%;">
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-1">${escapeHtml(propertyTitle)}</h5>
+                            <p class="mb-1 text-muted">
+                                <i class="bi bi-calendar"></i> ${booking.start_date} — ${booking.end_date}
+                            </p>
+                            <p class="mb-1"><strong>${parseFloat(booking.total_price).toLocaleString('ru-RU')} ₽</strong></p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge bg-${statusClass} fs-6">${statusText}</span>
+                            ${booking.status === 'pending' ? 
+                                `<button class="btn btn-sm btn-danger mt-2" onclick="cancelBooking(${booking.id})">Отменить</button>` : 
+                                ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        $('#bookingsList').html(html);
+    }
+    
+    window.cancelBooking = function(id) {
+        if (confirm('Отменить бронирование?')) {
+            $.ajax({
+                url: API_URL + `bookings/${id}/cancel/`,
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(response) {
+                    showNotification('Бронирование отменено', 'success');
+                    loadMyBookings();
+                },
+                error: function(xhr) {
+                    console.error('Cancel error:', xhr);
+                    showNotification('Ошибка при отмене бронирования', 'danger');
+                }
+            });
+        }
+    };
+    
+    function getStatusText(status) {
+        const statusMap = {
+            'all': 'все',
+            'pending': 'ожидающие',
+            'confirmed': 'подтвержденные',
+            'cancelled': 'отмененные',
+            'completed': 'завершенные'
+        };
+        return statusMap[status] || status;
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Обработка переключения табов
+    $('#bookingTabs .nav-link').on('click', function() {
+        $('#bookingTabs .nav-link').removeClass('active');
+        $(this).addClass('active');
+        currentStatus = $(this).data('status');
+        loadMyBookings();
+    });
+    
+    // Загружаем данные
+    loadMyBookings();
+});
+</script>
+{% endblock %}
