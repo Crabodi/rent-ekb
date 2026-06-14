@@ -216,6 +216,18 @@
     </div>
 </div>
 
+<!-- Модальное окно для увеличенного просмотра фото -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0">
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" style="z-index: 1060;"></button>
+                <img id="modalImage" src="" alt="Увеличенное фото" style="width: 100%; height: auto; border-radius: 10px;">
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Скрытый элемент для хранения данных о ценах -->
 <div id="propertyPriceData" style="display: none;"></div>
 {% endblock %}
@@ -569,6 +581,13 @@ $(document).ready(function() {
         }
     }
     
+    // Открытие увеличенного фото при клике
+    $(document).on('click', '.carousel-item img', function() {
+        const imgSrc = $(this).attr('src');
+        $('#modalImage').attr('src', imgSrc);
+        $('#imageModal').modal('show');
+    });
+
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');

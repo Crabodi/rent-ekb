@@ -75,7 +75,7 @@ input, select, textarea, button {
     color: #333;
 }
 
-/* Блок с фоном (под навбаром и формой поиска) */
+/* Блок с фоном */
 .hero-bg {
     background-image: url('/static/images/hero-bg.jpg');
     background-size: cover;
@@ -154,6 +154,33 @@ input, select, textarea, button {
     color: white;
 }
 
+/* Кастомный цвет кнопок */
+.btn-primary,
+.btn-primary:active,
+.btn-primary:focus,
+.btn-primary:active:focus,
+.btn-primary:focus-visible {
+    background-color: #662483 !important;
+    border-color: #662483 !important;
+}
+
+.btn-primary:hover {
+    background-color: #4a1a5e !important;
+    border-color: #4a1a5e !important;
+}
+
+.btn-primary:active,
+.btn-primary.active,
+.show > .btn-primary.dropdown-toggle {
+    background-color: #3d144f !important;
+    border-color: #3d144f !important;
+}
+
+.btn-primary:focus,
+.btn-primary:active:focus {
+    box-shadow: 0 0 0 0.25rem rgba(61, 20, 79, 0.5) !important;
+}
+
 /* Цвет заголовков */
 .card-header {
     background-color: #662483 !important;
@@ -190,4 +217,14 @@ input, select, textarea, button {
     border-radius: 15px;
     padding: 20px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Курсор-указатель для карусели */
+.carousel-item img {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.carousel-item img:hover {
+    opacity: 0.95;
 }
