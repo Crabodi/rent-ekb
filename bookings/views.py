@@ -35,18 +35,29 @@ class BookingViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        # Показываем бронирования, где пользователь либо арендатор, либо владелец объекта
         return Booking.objects.filter(
             models.Q(tenant=user) | models.Q(property_obj__owner=user)
         ).distinct()
+    
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def pending_count(self, request):
+        """Возвращает количество ожидающих подтверждения бронирований для текущего пользователя"""
+        user = request.user
+        
+        # Для владельца - заявки на его объекты
+        # Для арендатора - его собственные заявки
+        pending_bookings = Booking.objects.filter(
+            models.Q(tenant=user) | models.Q(property_obj__owner=user),
+            status='pending'
+        ).distinct()
+        
+        return Response({'count': pending_bookings.count()})
     
     def perform_create(self, serializer):
         property_obj = serializer.validated_data['property_obj']
         rental_type = serializer.validated_data.get('rental_type')
         
-        # Проверка для долгосрочной аренды
         if rental_type == 'long_term':
-            # Проверяем, не забронирован ли уже объект
             existing_booking = Booking.objects.filter(
                 property_obj=property_obj,
                 rental_type='long_term',
@@ -234,17 +245,15 @@ http://127.0.0.1:8000/my-bookings/
     
     @action(detail=True, methods=['post'])
     def cancel_booking_by_owner(self, request, pk=None):
-        """Снятие бронирования владельцем со своего объявления (отмена подтвержденной долгосрочной аренды)"""
+        """Снятие бронирования владельцем со своего объявления"""
         booking = self.get_object()
         
-        # Проверяем, что пользователь - владелец объекта
         if booking.property_obj.owner != request.user:
             return Response(
                 {'error': 'Только владелец может снять бронирование со своего объявления'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Проверяем, что бронирование подтверждено и это долгосрочная аренда
         if booking.status != 'confirmed':
             return Response(
                 {'error': f'Можно снять только подтвержденное бронирование. Текущий статус: {booking.status}'},
@@ -259,19 +268,16 @@ http://127.0.0.1:8000/my-bookings/
         
         comment = request.data.get('comment', '')
         
-        # Отменяем бронирование
         booking.status = 'cancelled'
         booking.owner_response_comment = comment or 'Бронирование снято владельцем'
         booking.save()
         
-        # Активируем объявление снова (если оно было деактивировано)
         property_obj = booking.property_obj
         if not property_obj.is_active:
             property_obj.is_active = True
             property_obj.save()
             print(f"Property {property_obj.title} reactivated")
 
-        # Уведомляем арендатора
         self.send_booking_status_update_to_tenant(booking, 'Снято владельцем', comment)
         
         return Response({
@@ -283,7 +289,7 @@ http://127.0.0.1:8000/my-bookings/
     def for_owner(self, request):
         """Получить бронирования для владельца (только ожидающие подтверждения)"""
         user = request.user
-        if user.role not in ['landlord', 'both']:  # type: ignore
+        if user.role not in ['landlord', 'both']:
             return Response(
                 {'error': 'Только владельцы могут просматривать эту информацию'},
                 status=status.HTTP_403_FORBIDDEN

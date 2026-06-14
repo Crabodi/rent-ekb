@@ -39,8 +39,11 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'my_properties' %}">Мои объявления</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'my_bookings' %}">Мои бронирования</a>
+                        <li class="nav-item" id="bookingsNavItem">
+                            <a class="nav-link" href="{% url 'my_bookings' %}">
+                                Мои бронирования
+                                <span id="pendingBadge" class="badge bg-danger rounded-pill ms-1" style="display: none; font-size: 0.7rem;"></span>
+                            </a>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">{{ user.username }}</a>
@@ -114,7 +117,6 @@
         const CURRENT_USER_ROLE = '{{ user.role|default:"" }}';
         const CURRENT_USER_EMAIL = '{{ user.email|default:"" }}';
         
-        
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -152,6 +154,36 @@
                 console.error('Token refresh failed:', error);
             }
             return false;
+        }
+        
+        // Функция для обновления счетчика уведомлений
+        function updatePendingCount() {
+            if (!CURRENT_USER_ID) return;
+            
+            const token = getAccessToken();
+            
+            $.ajax({
+                url: API_URL + 'bookings/pending_count/',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(data) {
+                    const count = data.count;
+                    const badge = $('#pendingBadge');
+                    
+                    if (count > 0) {
+                        badge.text(count);
+                        badge.show();
+                    } else {
+                        badge.hide();
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error loading pending count:', xhr.status);
+                }
+            });
         }
         
         $(document).ajaxSend(function(event, xhr, settings) {
@@ -199,6 +231,15 @@
                 alert.fadeOut(300, function() { $(this).remove(); });
             }, 3000);
         }
+        
+        // Загружаем счетчик при загрузке страницы
+        $(document).ready(function() {
+            if (CURRENT_USER_ID) {
+                updatePendingCount();
+                // Обновляем счетчик каждые 30 секунд
+                setInterval(updatePendingCount, 30000);
+            }
+        });
     </script>
     
     {% block extra_js %}{% endblock %}
