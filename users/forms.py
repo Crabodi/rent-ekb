@@ -26,13 +26,10 @@ class UserRegisterForm(UserCreationForm):
         'class': 'form-control',
         'placeholder': 'Подтверждение пароля'
     }))
-    role = forms.ChoiceField(choices=User.ROLE_CHOICES, widget=forms.Select(attrs={
-        'class': 'form-control'
-    }))
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'phone', 'role', 'password1', 'password2']
+        fields = ['username', 'email', 'phone', 'password1', 'password2']
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -50,7 +47,7 @@ class UserRegisterForm(UserCreationForm):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
         user.phone = self.cleaned_data['phone']
-        user.role = self.cleaned_data['role']
+        user.role = 'both'  # Автоматически устанавливаем роль 'both'
         if commit:
             user.save()
         return user

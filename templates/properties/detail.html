@@ -29,7 +29,14 @@
         position: relative;
         z-index: 1;
     }
-    /* Увеличиваем отступ между колонками на мобильных */
+    .btn-active {
+        background-color: #0d6efd;
+        color: white;
+    }
+    .booking-info-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid #ffc107;
+    }
     @media (max-width: 768px) {
         .booking-form {
             position: relative;
@@ -49,7 +56,7 @@
             <div id="propertyCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
                 <div class="carousel-inner" id="carouselImages">
                     <div class="carousel-item active">
-                        <img src="https://via.placeholder.com/800x400?text=Загрузка..." class="d-block w-100" alt="Загрузка">
+                        <img src="/static/images/no-image.svg" class="d-block w-100" alt="Загрузка" style="height: 400px; object-fit: cover;">
                     </div>
                 </div>
                 <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
@@ -84,7 +91,7 @@
             
             <!-- Отзывы (будет позже) -->
             <div class="card mt-4">
-                <div class="card-header">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">Отзывы</h5>
                 </div>
                 <div class="card-body">
@@ -107,26 +114,77 @@
                         </div>
                         
                         {% if user.is_authenticated %}
-                            <form id="bookingForm">
+                            <!-- Информация о текущем бронировании (для владельца) -->
+                            <div id="activeBookingInfo" class="alert alert-warning booking-info-card" style="display: none;">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Объект забронирован!</strong>
+                                <div id="activeBookingDetails"></div>
+                                <button type="button" class="btn btn-danger btn-sm mt-2" id="cancelBookingBtn">
+                                    <i class="bi bi-x-circle"></i> Снять бронирование
+                                </button>
+                            </div>
+                            
+                            <!-- Выбор типа аренды (только если оба варианта доступны) -->
+                            <div id="rentalTypeSelector" style="display: none;">
+                                <div class="btn-group w-100 mb-3" role="group">
+                                    <button type="button" class="btn btn-outline-primary" id="dailyTypeBtn">
+                                        <i class="bi bi-calendar-day"></i> Посуточно
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" id="longTermTypeBtn">
+                                        <i class="bi bi-infinity"></i> Длительная
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Форма для посуточной аренды -->
+                            <div id="dailyBookingForm" style="display: none;">
                                 <div class="mb-3">
                                     <label class="form-label">Дата заезда</label>
-                                    <input type="date" class="form-control" id="startDate" required>
+                                    <input type="date" class="form-control" id="dailyStartDate" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Дата выезда</label>
-                                    <input type="date" class="form-control" id="endDate" required>
+                                    <input type="date" class="form-control" id="dailyEndDate" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Количество ночей</label>
+                                    <input type="text" class="form-control" id="dailyNights" readonly>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Комментарий</label>
-                                    <textarea class="form-control" id="comment" rows="3" placeholder="Ваши пожелания..."></textarea>
+                                    <textarea class="form-control" id="dailyComment" rows="3" placeholder="Ваши пожелания..."></textarea>
                                 </div>
-                                <div id="pricePreview" class="alert alert-info" style="display: none;">
-                                    <strong>Итого: <span id="totalPrice">0</span> ₽</strong>
+                                <div id="dailyPricePreview" class="alert alert-info" style="display: none;">
+                                    <strong>Итого: <span id="dailyTotalPrice">0</span> ₽</strong>
                                 </div>
-                                <button type="submit" class="btn btn-success w-100" id="bookBtn">
+                                <button type="button" class="btn btn-success w-100" id="dailyBookBtn">
+                                    <i class="bi bi-calendar-check"></i> Забронировать посуточно
+                                </button>
+                            </div>
+                            
+                            <!-- Форма для долгосрочной аренды -->
+                            <div id="longTermBookingForm" style="display: none;">
+                                <div class="mb-3">
+                                    <label class="form-label">Дата начала аренды</label>
+                                    <input type="date" class="form-control" id="longTermStartDate" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Комментарий</label>
+                                    <textarea class="form-control" id="longTermComment" rows="3" placeholder="Ваши пожелания..."></textarea>
+                                </div>
+                                <div id="longTermPricePreview" class="alert alert-info">
+                                    <strong>Стоимость аренды:</strong> <span id="longTermPrice">0</span> ₽ в месяц
+                                </div>
+                                <button type="button" class="btn btn-success w-100" id="longTermBookBtn">
                                     <i class="bi bi-calendar-check"></i> Забронировать
                                 </button>
-                            </form>
+                            </div>
+                            
+                            <!-- Информационное сообщение -->
+                            <div id="bookingInfo" class="alert alert-info mt-3" style="display: none;">
+                                <i class="bi bi-info-circle"></i> 
+                                <span id="bookingInfoText"></span>
+                            </div>
                         {% else %}
                             <div class="alert alert-warning">
                                 <i class="bi bi-info-circle"></i> Для бронирования необходимо 
@@ -141,7 +199,7 @@
             <!-- Информация о владельце -->
             <div class="owner-card">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">Владелец</h5>
                     </div>
                     <div class="card-body">
@@ -165,19 +223,24 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    console.log('Detail page loaded');
-    
     const propertyId = window.location.pathname.split('/')[2];
-    console.log('Property ID:', propertyId);
+    let propertyData = null;
+    let currentRentalType = 'daily';
+    let activeBooking = null;
     
     // Загрузка данных об объявлении
     function loadPropertyDetails() {
         $.ajax({
             url: API_URL + 'properties/' + propertyId + '/',
             method: 'GET',
+            headers: {
+            'Authorization': 'Bearer ' + getAccessToken(),
+            'X-CSRFToken': getCookie('csrftoken')
+            },
             success: function(property) {
-                console.log('Property loaded:', property);
+                propertyData = property;
                 displayPropertyDetails(property);
+                checkActiveBooking(property);
             },
             error: function(xhr, status, error) {
                 console.error('Error loading property:', error);
@@ -186,102 +249,254 @@ $(document).ready(function() {
         });
     }
     
-    // Отображение данных
-    function displayPropertyDetails(property) {
-        // Основная информация
-        $('#propertyTitle').text(property.title || 'Без названия');
-        $('#propertyLocation').html('<i class="bi bi-geo-alt"></i> ' + (property.location_display || 'Адрес не указан'));
-        $('#propertyDescription').text(property.description || 'Описание отсутствует');
-        $('#propertyAddress').text(property.address || 'Не указан');
-        $('#propertyRooms').text(property.rooms || 0);
-        $('#propertyPrice').text(property.price_display || 'Цена не указана');
+    // Проверка активного бронирования (для владельца)
+    function checkActiveBooking(property) {
+        const isOwner = (CURRENT_USER_ID === property.owner);
         
-        // Тип объекта
-        const typeMap = {
-            'apartment': 'Квартира',
-            'house': 'Дом',
-            'room': 'Комната',
-            'studio': 'Студия'
-        };
-        $('#propertyType').text(typeMap[property.property_type] || property.property_type);
+        if (isOwner) {
+            $.ajax({
+                url: API_URL + 'bookings/',
+                method: 'GET',
+                success: function(bookings) {
+                    const bookingsList = Array.isArray(bookings) ? bookings : (bookings.results || []);
+                    // Ищем подтвержденное долгосрочное бронирование этого объекта
+                    activeBooking = bookingsList.find(b => 
+                        b.property_obj === property.id && 
+                        b.rental_type === 'long_term' && 
+                        b.status === 'confirmed'
+                    );
+                    
+                    if (activeBooking) {
+                        $('#activeBookingInfo').show();
+                        $('#activeBookingDetails').html(`
+                            <strong>Арендатор:</strong> ${escapeHtml(activeBooking.tenant_name || 'Неизвестен')}<br>
+                            <strong>Дата начала:</strong> ${activeBooking.long_term_start_date || activeBooking.start_date || 'Не указана'}<br>
+                            <strong>Стоимость:</strong> ${parseFloat(activeBooking.total_price).toLocaleString('ru-RU')} ₽/мес<br>
+                            <strong>Комментарий:</strong> ${escapeHtml(activeBooking.tenant_comment || 'Нет')}
+                        `);
+                        setupBookingForms(property, true);
+                    } else {
+                        setupBookingForms(property, false);
+                    }
+                },
+                error: function() {
+                    setupBookingForms(property, false);
+                }
+            });
+        } else {
+            setupBookingForms(property, false);
+        }
+    }
+    
+    // Снятие бронирования владельцем
+    $('#cancelBookingBtn').on('click', function() {
+        if (!activeBooking) return;
         
-        // Срок аренды
-        const termMap = {
-            'daily': 'Посуточно',
-            'long_term': 'Длительная',
-            'both': 'Оба варианта'
-        };
-        $('#propertyRentalTerm').text(termMap[property.rental_term] || property.rental_term);
+        const comment = prompt('Введите комментарий для арендатора (причина снятия бронирования):');
         
-        // Владелец
-        $('#ownerName').text(property.owner_name || 'Не указан');
-        $('#ownerPhone').text(property.owner_phone || 'Не указан');
-        $('#ownerEmail').text(property.owner_email || 'Не указан');
+        $.ajax({
+            url: API_URL + `bookings/${activeBooking.id}/cancel_booking_by_owner/`,
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'Authorization': 'Bearer ' + getAccessToken(),
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            data: JSON.stringify({ comment: comment || '' }),
+            success: function(response) {
+                showNotification(response.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON;
+                showNotification(error?.error || 'Ошибка при снятии бронирования', 'danger');
+            }
+        });
+    });
+    
+    // Настройка форм бронирования в зависимости от типа аренды
+    function setupBookingForms(property, isBooked) {
+        const rentalTerm = property.rental_term;
+        const isOwner = (CURRENT_USER_ID === property.owner);
         
-        // Сохраняем данные о ценах
-        $('#propertyPriceData').data('pricePerDay', property.price_per_day);
-        $('#propertyPriceData').data('pricePerMonth', property.price_per_month);
-        $('#propertyPriceData').data('rentalTerm', property.rental_term);
+        // Если объект забронирован и пользователь не владелец
+        if (isBooked && !isOwner) {
+            $('#bookingInfo').show();
+            $('#bookingInfoText').html(`
+                <i class="bi bi-x-circle"></i> 
+                <strong>Объект недоступен для бронирования</strong><br>
+                Этот объект уже забронирован на длительный срок.
+            `);
+            $('#dailyBookingForm').hide();
+            $('#longTermBookingForm').hide();
+            $('#rentalTypeSelector').hide();
+            return;
+        }
         
-        // Фотографии
-        if (property.images && property.images.length > 0) {
-            const carouselInner = $('#carouselImages');
-            carouselInner.empty();
-            property.images.forEach((image, index) => {
-                const isActive = index === 0 ? 'active' : '';
-                carouselInner.append(`
-                    <div class="carousel-item ${isActive}">
-                        <img src="${image.image_url}" class="d-block w-100" alt="Фото ${index + 1}" style="height: 400px; object-fit: cover;">
-                    </div>
+        // Если владелец просматривает свое объявление
+        if (isOwner) {
+            if (!isBooked) {
+                $('#bookingInfo').show();
+                $('#bookingInfoText').html(`
+                    <i class="bi bi-info-circle"></i> 
+                    <strong>Вы владелец этого объекта</strong><br>
+                    Вы не можете забронировать собственное объявление.
                 `);
+            }
+            $('#dailyBookingForm').hide();
+            $('#longTermBookingForm').hide();
+            $('#rentalTypeSelector').hide();
+            return;
+        }
+        
+        // Для обычных пользователей
+        if (rentalTerm === 'daily') {
+            $('#dailyBookingForm').show();
+            $('#longTermBookingForm').hide();
+            $('#rentalTypeSelector').hide();
+            setupDailyBooking();
+            
+        } else if (rentalTerm === 'long_term') {
+            $('#dailyBookingForm').hide();
+            $('#longTermBookingForm').show();
+            $('#rentalTypeSelector').hide();
+            setupLongTermBooking();
+            updateLongTermPrice();
+            
+        } else if (rentalTerm === 'both') {
+            $('#rentalTypeSelector').show();
+            $('#bookingInfo').show();
+            $('#bookingInfoText').html('Выберите тип аренды');
+            
+            currentRentalType = 'daily';
+            $('#dailyTypeBtn').addClass('btn-active btn-primary').removeClass('btn-outline-primary');
+            $('#longTermTypeBtn').removeClass('btn-active btn-primary').addClass('btn-outline-primary');
+            $('#dailyBookingForm').show();
+            $('#longTermBookingForm').hide();
+            setupDailyBooking();
+            
+            $('#dailyTypeBtn').off('click').on('click', function() {
+                if (currentRentalType === 'daily') return;
+                currentRentalType = 'daily';
+                $(this).addClass('btn-active btn-primary').removeClass('btn-outline-primary');
+                $('#longTermTypeBtn').removeClass('btn-active btn-primary').addClass('btn-outline-primary');
+                $('#dailyBookingForm').show();
+                $('#longTermBookingForm').hide();
+                $('#bookingInfoText').html('Вы выбрали посуточную аренду. Выберите даты.');
+                setupDailyBooking();
+            });
+            
+            $('#longTermTypeBtn').off('click').on('click', function() {
+                if (currentRentalType === 'long_term') return;
+                currentRentalType = 'long_term';
+                $(this).addClass('btn-active btn-primary').removeClass('btn-outline-primary');
+                $('#dailyTypeBtn').removeClass('btn-active btn-primary').addClass('btn-outline-primary');
+                $('#dailyBookingForm').hide();
+                $('#longTermBookingForm').show();
+                $('#bookingInfoText').html('Вы выбрали долгосрочную аренду.');
+                setupLongTermBooking();
+                updateLongTermPrice();
             });
         }
     }
     
-    // Расчет стоимости
-    function calculatePrice() {
-        const startDate = $('#startDate').val();
-        const endDate = $('#endDate').val();
+    // Настройка посуточной аренды
+    function setupDailyBooking() {
+        $('#dailyStartDate, #dailyEndDate').off('change').on('change', function() {
+            calculateDailyPrice();
+        });
+        
+        $('#dailyBookBtn').off('click').on('click', function() {
+            submitDailyBooking();
+        });
+    }
+    
+    // Настройка долгосрочной аренды
+    function setupLongTermBooking() {
+        $('#longTermBookBtn').off('click').on('click', function() {
+            submitLongTermBooking();
+        });
+    }
+    
+    // Расчет стоимости посуточной аренды
+    function calculateDailyPrice() {
+        const startDate = $('#dailyStartDate').val();
+        const endDate = $('#dailyEndDate').val();
         
         if (startDate && endDate && startDate < endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
             const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
             
-            if (days > 0) {
-                const pricePerDay = $('#propertyPriceData').data('pricePerDay');
-                const pricePerMonth = $('#propertyPriceData').data('pricePerMonth');
-                const rentalTerm = $('#propertyPriceData').data('rentalTerm');
-                
-                let total = 0;
-                if (pricePerDay && (rentalTerm === 'daily' || rentalTerm === 'both')) {
-                    total = days * parseFloat(pricePerDay);
-                    $('#pricePreview').show();
-                    $('#totalPrice').text(total.toLocaleString('ru-RU'));
-                } else if (pricePerMonth && rentalTerm === 'long_term') {
-                    const months = Math.ceil(days / 30);
-                    total = months * parseFloat(pricePerMonth);
-                    $('#pricePreview').show();
-                    $('#totalPrice').text(total.toLocaleString('ru-RU'));
-                }
-                return true;
+            if (days > 0 && propertyData && propertyData.price_per_day) {
+                $('#dailyNights').val(days);
+                const total = days * parseFloat(propertyData.price_per_day);
+                $('#dailyPricePreview').show();
+                $('#dailyTotalPrice').text(total.toLocaleString('ru-RU'));
+                return;
             }
         }
-        $('#pricePreview').hide();
-        return false;
+        $('#dailyPricePreview').hide();
+        $('#dailyNights').val('');
     }
     
-    // Отправка бронирования
-    $('#bookingForm').on('submit', function(e) {
-        e.preventDefault();
+    // Обновление отображения цены для долгосрочной аренды
+    function updateLongTermPrice() {
+        if (propertyData && propertyData.price_per_month) {
+            const price = parseFloat(propertyData.price_per_month).toLocaleString('ru-RU');
+            $('#longTermPrice').text(price);
+        }
+    }
+    
+    // Отправка посуточного бронирования
+    function submitDailyBooking() {
+        const startDate = $('#dailyStartDate').val();
+        const endDate = $('#dailyEndDate').val();
+        
+        if (!startDate || !endDate) {
+            showNotification('Выберите даты заезда и выезда', 'warning');
+            return;
+        }
+        
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
         
         const bookingData = {
             property_obj: parseInt(propertyId),
-            start_date: $('#startDate').val(),
-            end_date: $('#endDate').val(),
-            tenant_comment: $('#comment').val()
+            rental_type: 'daily',
+            start_date: startDate,
+            end_date: endDate,
+            nights_count: nights,
+            tenant_comment: $('#dailyComment').val()
         };
         
+        sendBooking(bookingData);
+    }
+    
+    // Отправка долгосрочного бронирования
+    function submitLongTermBooking() {
+        const startDate = $('#longTermStartDate').val();
+        
+        if (!startDate) {
+            showNotification('Выберите дату начала аренды', 'warning');
+            return;
+        }
+        
+        const bookingData = {
+            property_obj: parseInt(propertyId),
+            rental_type: 'long_term',
+            long_term_start_date: startDate,
+            tenant_comment: $('#longTermComment').val()
+        };
+        
+        sendBooking(bookingData);
+    }
+    
+    // Отправка бронирования на сервер
+    function sendBooking(bookingData) {
         console.log('Sending booking:', bookingData);
         
         $.ajax({
@@ -289,6 +504,7 @@ $(document).ready(function() {
             method: 'POST',
             contentType: 'application/json',
             headers: {
+                'Authorization': 'Bearer ' + getAccessToken(),
                 'X-CSRFToken': getCookie('csrftoken')
             },
             data: JSON.stringify(bookingData),
@@ -309,12 +525,57 @@ $(document).ready(function() {
                 showNotification(errorMessage, 'danger');
             }
         });
-    });
+    }
     
-    // Отслеживание изменения дат
-    $('#startDate, #endDate').on('change', calculatePrice);
+    // Отображение данных объявления
+    function displayPropertyDetails(property) {
+        $('#propertyTitle').text(property.title || 'Без названия');
+        $('#propertyLocation').html('<i class="bi bi-geo-alt"></i> ' + (property.location_display || 'Адрес не указан'));
+        $('#propertyDescription').text(property.description || 'Описание отсутствует');
+        $('#propertyAddress').text(property.address || 'Не указан');
+        $('#propertyRooms').text(property.rooms || 0);
+        $('#propertyPrice').text(property.price_display || 'Цена не указана');
+        
+        const typeMap = {
+            'apartment': 'Квартира',
+            'house': 'Дом',
+            'room': 'Комната',
+            'studio': 'Студия'
+        };
+        $('#propertyType').text(typeMap[property.property_type] || property.property_type);
+        
+        const termMap = {
+            'daily': 'Посуточно',
+            'long_term': 'Длительная (бессрочно)',
+            'both': 'Оба варианта'
+        };
+        $('#propertyRentalTerm').text(termMap[property.rental_term] || property.rental_term);
+        
+        $('#ownerName').text(property.owner_name || 'Не указан');
+        $('#ownerPhone').text(property.owner_phone || 'Не указан');
+        $('#ownerEmail').text(property.owner_email || 'Не указан');
+        
+        if (property.images && property.images.length > 0) {
+            const carouselInner = $('#carouselImages');
+            carouselInner.empty();
+            property.images.forEach((image, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                carouselInner.append(`
+                    <div class="carousel-item ${isActive}">
+                        <img src="${image.image_url}" class="d-block w-100" alt="Фото ${index + 1}" style="height: 400px; object-fit: cover;">
+                    </div>
+                `);
+            });
+        }
+    }
     
-    // Загружаем данные
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
     loadPropertyDetails();
 });
 </script>

@@ -11,55 +11,21 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
-    <style>
-        /* Ваши стили */
-        .navbar-brand {
-            font-weight: bold;
-            font-size: 1.5rem;
-        }
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 60px 0;
-            margin-bottom: 40px;
-        }
-        .property-card {
-            transition: transform 0.3s;
-            margin-bottom: 20px;
-        }
-        .property-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .property-image {
-            height: 200px;
-            object-fit: cover;
-        }
-        .price {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #28a745;
-        }
-        .footer {
-            background-color: #f8f9fa;
-            padding: 40px 0;
-            margin-top: 60px;
-        }
-        .search-filters {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-    </style>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+ 
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Навигация -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!-- Навигация (фиксированная, полупрозрачная) -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" 
+         style="background-color: rgba(0, 0, 0, 0.5) !important; backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important;">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="bi bi-building"></i> Рент.ру
+            <a class="navbar-brand p-0" href="{% url 'home' %}">
+                <img src="{% static 'images/logo.svg' %}" 
+                    alt="Рент.ру" 
+                    height="40"
+                    style="width: auto;">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -67,25 +33,17 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
-                            <i class="bi bi-house"></i> Главная
-                        </a>
+                        <a class="nav-link" href="{% url 'home' %}">Главная</a>
                     </li>
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'my_properties' %}">
-                                <i class="bi bi-building"></i> Мои объявления
-                            </a>
+                            <a class="nav-link" href="{% url 'my_properties' %}">Мои объявления</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'my_bookings' %}">
-                                <i class="bi bi-calendar-check"></i> Мои бронирования
-                            </a>
+                            <a class="nav-link" href="{% url 'my_bookings' %}">Мои бронирования</a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-person"></i> {{ user.username }}
-                            </a>
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">{{ user.username }}</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'profile' %}">Профиль</a></li>
                                 <li><hr class="dropdown-divider"></li>
@@ -94,14 +52,10 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">
-                                <i class="bi bi-box-arrow-in-right"></i> Войти
-                            </a>
+                            <a class="nav-link" href="{% url 'login' %}">Войти</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link btn btn-primary text-white" href="{% url 'register' %}">
-                                <i class="bi bi-person-plus"></i> Регистрация
-                            </a>
+                            <a class="nav-link btn btn-primary text-white" href="{% url 'register' %}">Регистрация</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -110,7 +64,7 @@
     </nav>
 
     <!-- Основной контент -->
-    <main>
+    <main style="padding-top: 76px;">
         {% block content %}{% endblock %}
     </main>
 
@@ -119,8 +73,11 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4">
-                    <h5>Рент.ру</h5>
-                    <p>Сервис аренды недвижимости в Екатеринбурге и других городах России</p>
+                    <img src="{% static 'images/blacklogo.svg' %}" 
+                        alt="Рент.ру" 
+                        height="40"
+                        style="margin-bottom: 15px;">
+                    <p style="font-weight: bold;">Сервис аренды недвижимости в Екатеринбурге и других городах России</p>
                 </div>
                 <div class="col-md-4">
                     <h5>Быстрые ссылки</h5>
@@ -139,7 +96,7 @@
             </div>
             <hr>
             <div class="text-center">
-                <p>&copy; 2024 Рент.ру. Все права защищены.</p>
+                <p>&copy; 2026 Рент.ру. Все права защищены.</p>
             </div>
         </div>
     </footer>
@@ -149,12 +106,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Получаем токен из контекста Django
         const ACCESS_TOKEN = "{{ access_token|default:'' }}";
         const REFRESH_TOKEN = "{{ request.session.refresh_token|default:'' }}";
         const API_URL = '/api/';
+        const CURRENT_USER_ID = parseInt("{{ user.id|default:'0' }}");
+        const CURRENT_USERNAME = '{{ user.username|default:"" }}';
+        const CURRENT_USER_ROLE = '{{ user.role|default:"" }}';
+        const CURRENT_USER_EMAIL = '{{ user.email|default:"" }}';
         
-        // Функция для получения CSRF токена
+        
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -170,24 +130,21 @@
             return cookieValue;
         }
         
-        // Функция для обновления токена
+        function getAccessToken() {
+            return sessionStorage.getItem('access_token') || ACCESS_TOKEN;
+        }
+        
         async function refreshAccessToken() {
             if (!REFRESH_TOKEN) return false;
-            
             try {
                 const response = await fetch(API_URL + 'users/token/refresh/', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({refresh: REFRESH_TOKEN})
                 });
-                
                 if (response.ok) {
                     const data = await response.json();
-                    // Сохраняем новый токен
                     sessionStorage.setItem('access_token', data.access);
-                    // Обновляем страницу для получения нового токена в контексте
                     location.reload();
                     return true;
                 }
@@ -197,48 +154,22 @@
             return false;
         }
         
-        // Функция для выполнения AJAX запросов с автоматическим обновлением токена
-        async function apiRequest(url, options = {}) {
-            const makeRequest = async (token) => {
-                const headers = {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    ...options.headers
-                };
-                
+        $(document).ajaxSend(function(event, xhr, settings) {
+            if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+            }
+            if (settings.url.includes('/api/')) {
+                const token = getAccessToken();
                 if (token) {
-                    headers['Authorization'] = 'Bearer ' + token;
+                    xhr.setRequestHeader("Authorization", "Bearer " + token);
                 }
-                
-                const response = await fetch(url, {
-                    ...options,
-                    headers: headers
-                });
-                
-                if (response.status === 401) {
-                    // Токен просрочен, пробуем обновить
-                    const refreshed = await refreshAccessToken();
-                    if (refreshed) {
-                        // Повторяем запрос с новым токеном
-                        const newToken = sessionStorage.getItem('access_token');
-                        return makeRequest(newToken);
-                    }
-                }
-                
-                return response;
-            };
-            
-            let token = sessionStorage.getItem('access_token') || ACCESS_TOKEN;
-            return makeRequest(token);
-        }
+            }
+        });
         
-        // Настройка глобального AJAX с перехватом ошибки 401
         $(document).ajaxError(function(event, jqXHR, settings, error) {
             if (jqXHR.status === 401) {
-                console.log('Token expired, refreshing...');
                 refreshAccessToken().then(refreshed => {
                     if (refreshed) {
-                        // Повторяем оригинальный запрос
                         $.ajax(settings);
                     } else {
                         window.location.href = '/login/';
@@ -248,23 +179,6 @@
             }
         });
         
-        // Настройка AJAX с авторизацией
-        $(document).ajaxSend(function(event, xhr, settings) {
-            // CSRF токен
-            if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-                xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-            }
-            
-            // JWT токен для API запросов
-            if (settings.url.includes('/api/')) {
-                let token = sessionStorage.getItem('access_token') || ACCESS_TOKEN;
-                if (token) {
-                    xhr.setRequestHeader("Authorization", "Bearer " + token);
-                }
-            }
-        });
-        
-        // Инициализация - сохраняем токен из Django в sessionStorage
         if (ACCESS_TOKEN && !sessionStorage.getItem('access_token')) {
             sessionStorage.setItem('access_token', ACCESS_TOKEN);
         }
@@ -272,7 +186,6 @@
             sessionStorage.setItem('refresh_token', REFRESH_TOKEN);
         }
         
-        // Функция для уведомлений
         function showNotification(message, type = 'success') {
             const alert = $(`
                 <div class="alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3" 

@@ -3,86 +3,89 @@
 {% block title %}Рент.ру - Поиск недвижимости{% endblock %}
 
 {% block content %}
-<!-- Hero секция -->
-<div class="hero-section">
-    <div class="container text-center">
-        <h1 class="display-4">Найдите идеальное жилье</h1>
-        <p class="lead">Более 1000 объектов недвижимости по всей России</p>
+<!-- Блок с фоном: навбар уже фиксированный, здесь только форма поиска -->
+<div class="hero-bg">
+    <div class="container">
+        <!-- Текст на фоне -->
+        <div class="hero-text">
+            <h1 class="display-4">Найдите идеальное жилье</h1>
+            <p class="lead">Более 1000 объектов недвижимости по всей России</p>
+        </div>
+        
+        <!-- Форма поиска и фильтрации -->
+        <div class="search-filters">
+            <h4 class="mb-3"><i class="bi bi-search"></i> Поиск недвижимости</h4>
+            <form id="searchForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Дата заезда</label>
+                        <input type="date" class="form-control" id="startDate">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Дата выезда</label>
+                        <input type="date" class="form-control" id="endDate">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Мин. цена</label>
+                        <input type="number" class="form-control" id="minPrice" placeholder="от 0 ₽">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Макс. цена</label>
+                        <input type="number" class="form-control" id="maxPrice" placeholder="до любой">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Комнат</label>
+                        <select class="form-select" id="rooms">
+                            <option value="">Любое</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4+</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Тип объекта</label>
+                        <select class="form-select" id="propertyType">
+                            <option value="">Все</option>
+                            <option value="apartment">Квартира</option>
+                            <option value="house">Дом</option>
+                            <option value="room">Комната</option>
+                            <option value="studio">Студия</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Город</label>
+                        <select class="form-select" id="city">
+                            <option value="">Все города</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Район</label>
+                        <select class="form-select" id="district">
+                            <option value="">Все районы</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Срок аренды</label>
+                        <select class="form-select" id="rentalTerm">
+                            <option value="">Любой</option>
+                            <option value="daily">Посуточно</option>
+                            <option value="long_term">Длительная</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Найти
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<div class="container">
-    <!-- Форма поиска и фильтрации -->
-    <div class="search-filters">
-        <h4 class="mb-3"><i class="bi bi-search"></i> Поиск недвижимости</h4>
-        <form id="searchForm">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Дата заезда</label>
-                    <input type="date" class="form-control" id="startDate">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Дата выезда</label>
-                    <input type="date" class="form-control" id="endDate">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Мин. цена</label>
-                    <input type="number" class="form-control" id="minPrice" placeholder="от 0 ₽">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Макс. цена</label>
-                    <input type="number" class="form-control" id="maxPrice" placeholder="до любой">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Комнат</label>
-                    <select class="form-select" id="rooms">
-                        <option value="">Любое</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4+</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Тип объекта</label>
-                    <select class="form-select" id="propertyType">
-                        <option value="">Все</option>
-                        <option value="apartment">Квартира</option>
-                        <option value="house">Дом</option>
-                        <option value="room">Комната</option>
-                        <option value="studio">Студия</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Город</label>
-                    <select class="form-select" id="city">
-                        <option value="">Все города</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Район</label>
-                    <select class="form-select" id="district">
-                        <option value="">Все районы</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Срок аренды</label>
-                    <select class="form-select" id="rentalTerm">
-                        <option value="">Любой</option>
-                        <option value="daily">Посуточно</option>
-                        <option value="long_term">Длительная</option>
-                    </select>
-                </div>
-                <div class="col-md-12">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Найти
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- Результаты поиска -->
+<!-- Результаты поиска (на белом фоне) -->
+<div class="container py-4">
     <div id="propertiesList">
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
@@ -95,11 +98,8 @@
 
 {% block extra_js %}
 <script>
-// ВСЕ JavaScript код должен быть здесь, внутри extra_js
 $(document).ready(function() {
-    console.log('Страница загружена, jQuery работает');
     
-    // Загрузка городов
     function loadCities() {
         $.ajax({
             url: '/api/cities/',
@@ -113,7 +113,6 @@ $(document).ready(function() {
                         citySelect.append(`<option value="${city.id}">${city.name}</option>`);
                     });
                 }
-                console.log('Города загружены:', data.length);
             },
             error: function(xhr, status, error) {
                 console.error('Ошибка загрузки городов:', error);
@@ -121,7 +120,6 @@ $(document).ready(function() {
         });
     }
     
-    // Загрузка районов
     $('#city').on('change', function() {
         const cityId = $(this).val();
         const districtSelect = $('#district');
@@ -149,7 +147,6 @@ $(document).ready(function() {
         }
     });
     
-    // Загрузка объявлений
     function loadProperties() {
         $('#propertiesList').html(`
             <div class="text-center py-5">
@@ -160,7 +157,6 @@ $(document).ready(function() {
         `);
         
         const params = {};
-        
         if ($('#startDate').val()) params.start_date = $('#startDate').val();
         if ($('#endDate').val()) params.end_date = $('#endDate').val();
         if ($('#minPrice').val()) params.min_price = $('#minPrice').val();
@@ -171,14 +167,12 @@ $(document).ready(function() {
         if ($('#district').val()) params.district = $('#district').val();
         if ($('#rentalTerm').val()) params.rental_term = $('#rentalTerm').val();
         
-        console.log('Параметры поиска:', params);
         
         $.ajax({
             url: '/api/properties/',
             method: 'GET',
             data: params,
             success: function(data) {
-                console.log('Получено объявлений:', data.length);
                 displayProperties(data);
             },
             error: function(xhr, status, error) {
@@ -192,7 +186,6 @@ $(document).ready(function() {
         });
     }
     
-    // Отображение объявлений
     function displayProperties(properties) {
         if (!properties || properties.length === 0) {
             $('#propertiesList').html(`
@@ -205,7 +198,11 @@ $(document).ready(function() {
         
         let html = '<div class="row">';
         properties.forEach(property => {
-            let imageUrl = 'https://via.placeholder.com/300x200?text=Нет+фото';
+            if (property.is_available === false) {
+                return;
+            }
+            
+            let imageUrl = '/static/images/no-image.svg';
             if (property.main_image) {
                 imageUrl = property.main_image;
             }
@@ -242,13 +239,11 @@ $(document).ready(function() {
         $('#propertiesList').html(html);
     }
     
-    // Обработка формы поиска
     $('#searchForm').on('submit', function(e) {
         e.preventDefault();
         loadProperties();
     });
     
-    // Загружаем все при старте
     loadCities();
     loadProperties();
 });

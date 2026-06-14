@@ -40,6 +40,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
     price_display = serializers.ReadOnlyField()
     location_display = serializers.ReadOnlyField()
     main_image = serializers.SerializerMethodField()
+    is_available = serializers.SerializerMethodField()
     
     class Meta:
         model = Property
@@ -47,7 +48,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
             'id', 'title', 'property_type', 'rooms', 
             'city_name', 'district_name', 'price_display',
             'location_display', 'main_image', 'owner_name',
-            'owner_avatar', 'created_at'
+            'owner_avatar', 'created_at', 'is_available', 'rental_term'
         ]
     
     def get_main_image(self, obj):
@@ -58,6 +59,17 @@ class PropertyListSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.main_image)
             return obj.main_image
         return None
+
+    def get_is_available(self, obj):
+        """Проверка доступности для бронирования"""
+        from bookings.models import Booking
+        if obj.rental_term == 'long_term':
+            return not Booking.objects.filter(
+                property_obj=obj,
+                rental_type='long_term',
+                status__in=['pending', 'confirmed']
+            ).exists()
+        return True
 
 
 class PropertyDetailSerializer(serializers.ModelSerializer):
@@ -71,6 +83,7 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
     price_display = serializers.ReadOnlyField()
     location_display = serializers.ReadOnlyField()
     images = PropertyImageSerializer(many=True, read_only=True)
+    is_available = serializers.SerializerMethodField()
     
     class Meta:
         model = Property
@@ -79,19 +92,36 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
             'address', 'description', 'rental_term', 'price_per_day',
             'price_per_month', 'owner', 'owner_name', 'owner_phone',
             'owner_email', 'owner_avatar', 'price_display', 'location_display',
-            'images', 'is_active', 'created_at', 'updated_at'
+            'images', 'is_active', 'created_at', 'updated_at', 'is_available'
         ]
         read_only_fields = ['owner', 'created_at', 'updated_at']
 
+    def get_is_available(self, obj):
+        from bookings.models import Booking
+        if obj.rental_term == 'long_term':
+            return not Booking.objects.filter(
+                property_obj=obj,
+                rental_type='long_term',
+                status__in=['pending', 'confirmed']
+            ).exists()
+        return True
+
 
 class PropertyCreateSerializer(serializers.ModelSerializer):
-    """Сериализатор для создания/редактирования"""
+    """Сериализатор для создания/редактирования с поддержкой фотографий"""
+    photos = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False,
+        help_text='Список фотографий для загрузки'
+    )
+    
     class Meta:
         model = Property
         fields = [
             'title', 'property_type', 'rooms', 'city', 'district',
             'description', 'address', 'rental_term', 'price_per_day',
-            'price_per_month'
+            'price_per_month', 'photos'
         ]
     
     def validate(self, data):
@@ -124,8 +154,61 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         return data
     
     def create(self, validated_data):
-        # Автоматически устанавливаем владельца из контекста запроса
+        # Извлекаем фотографии из данных
+        photos = validated_data.pop('photos', [])
+        
+        # Получаем владельца из контекста запроса
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
             validated_data['owner'] = request.user
-        return super().create(validated_data)
+        
+        # Создаем объект недвижимости
+        property_obj = Property.objects.create(**validated_data)
+        
+        # Сохраняем фотографии
+        for i, photo in enumerate(photos):
+            PropertyImage.objects.create(
+                property_obj=property_obj,
+                image=photo,
+                is_main=(i == 0),  # Первое фото - главное
+                order=i
+            )
+        
+        return property_obj
+
+
+class PropertyUpdateSerializer(serializers.ModelSerializer):
+    """Сериализатор для обновления объявления"""
+    photos = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False
+    )
+    
+    class Meta:
+        model = Property
+        fields = [
+            'title', 'property_type', 'rooms', 'city', 'district',
+            'description', 'address', 'rental_term', 'price_per_day',
+            'price_per_month', 'is_active', 'photos'
+        ]
+    
+    def update(self, instance, validated_data):
+        photos = validated_data.pop('photos', [])
+        
+        # Обновляем поля
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Если есть новые фотографии, добавляем их
+        if photos:
+            for i, photo in enumerate(photos):
+                PropertyImage.objects.create(
+                    property_obj=instance,
+                    image=photo,
+                    is_main=(i == 0 and not instance.images.exists()),
+                    order=instance.images.count() + i
+                )
+        
+        return instance

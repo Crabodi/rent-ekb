@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from properties.models import Property
+from datetime import date
 
 class Booking(models.Model):
     """
@@ -13,6 +14,11 @@ class Booking(models.Model):
         ('confirmed', 'Подтверждено'),
         ('cancelled', 'Отменено'),
         ('completed', 'Завершено'),
+    ]
+    
+    RENTAL_TYPE_CHOICES = [
+        ('daily', 'Посуточно'),
+        ('long_term', 'Длительная'),
     ]
     
     # Связи
@@ -30,16 +36,48 @@ class Booking(models.Model):
         verbose_name='Арендатор'
     )
     
-    # Даты бронирования
-    start_date = models.DateField('Дата заезда')
-    end_date = models.DateField('Дата выезда')
+    # Тип аренды
+    rental_type = models.CharField(
+        'Тип аренды',
+        max_length=20,
+        choices=RENTAL_TYPE_CHOICES,
+        default='daily'
+    )
+    
+    # Для посуточной аренды
+    start_date = models.DateField(
+        'Дата заезда',
+        null=True,
+        blank=True,
+        help_text='Для посуточной аренды'
+    )
+    end_date = models.DateField(
+        'Дата выезда',
+        null=True,
+        blank=True,
+        help_text='Для посуточной аренды'
+    )
+    nights_count = models.IntegerField(
+        'Количество ночей',
+        null=True,
+        blank=True,
+        help_text='Для посуточной аренды'
+    )
+    
+    # Для долгосрочной аренды
+    long_term_start_date = models.DateField(
+        'Дата начала долгосрочной аренды',
+        null=True,
+        blank=True,
+        help_text='Для долгосрочной аренды (бессрочно)'
+    )
     
     # Финансы
     total_price = models.DecimalField(
         'Общая стоимость', 
         max_digits=10, 
         decimal_places=2,
-        help_text='Автоматически рассчитывается'
+        help_text='Для посуточной - общая сумма, для долгосрочной - цена за месяц'
     )
     
     # Статус
@@ -62,6 +100,11 @@ class Booking(models.Model):
     # Комментарии
     tenant_comment = models.TextField('Комментарий арендатора', blank=True)
     owner_comment = models.TextField('Комментарий владельца', blank=True)
+    owner_response_comment = models.TextField(  # НОВОЕ ПОЛЕ
+        'Комментарий владельца при ответе',
+        blank=True,
+        help_text='Комментарий при подтверждении или отказе бронирования'
+    )
     
     # Системные поля
     created_at = models.DateTimeField('Дата бронирования', auto_now_add=True)
@@ -69,47 +112,63 @@ class Booking(models.Model):
     
     def clean(self):
         """Валидация дат"""
-        if self.start_date >= self.end_date:
-            raise ValidationError('Дата заезда должна быть раньше даты выезда')
+        if self.rental_type == 'daily':
+            if self.start_date and self.end_date:
+                if self.start_date >= self.end_date:
+                    raise ValidationError('Дата заезда должна быть раньше даты выезда')
+                
+                if self.start_date < date.today():
+                    raise ValidationError('Дата заезда не может быть в прошлом')
         
-        if self.start_date < models.DateField().auto_now: # type: ignore
-            raise ValidationError('Дата заезда не может быть в прошлом')
+        elif self.rental_type == 'long_term':
+            if self.long_term_start_date and self.long_term_start_date < date.today():
+                raise ValidationError('Дата начала аренды не может быть в прошлом')
     
     def save(self, *args, **kwargs):
         """Автоматический расчет стоимости при сохранении"""
         if not self.total_price:
-            if self.property_obj.rental_term in ['daily', 'both'] and self.property_obj.price_per_day:
+            if self.rental_type == 'daily' and self.nights_count and self.property_obj.price_per_day:
                 # Посуточная аренда
-                days = (self.end_date - self.start_date).days
-                self.total_price = days * self.property_obj.price_per_day
-            elif self.property_obj.rental_term == 'long_term' and self.property_obj.price_per_month:
-                # Длительная аренда (в месяцах)
-                months = (self.end_date.year - self.start_date.year) * 12 + (self.end_date.month - self.start_date.month)
-                months = max(months, 1)  # Минимум 1 месяц
-                self.total_price = months * self.property_obj.price_per_month
+                self.total_price = self.nights_count * self.property_obj.price_per_day
+            elif self.rental_type == 'long_term' and self.property_obj.price_per_month:
+                # Долгосрочная аренда - цена за месяц
+                self.total_price = self.property_obj.price_per_month
         
         self.full_clean()  # Проверяем валидацию перед сохранением
         super().save(*args, **kwargs)
     
     @property
     def duration_days(self):
-        """Количество дней аренды"""
-        return (self.end_date - self.start_date).days
+        """Количество дней аренды (только для посуточной)"""
+        if self.rental_type == 'daily' and self.start_date and self.end_date:
+            return (self.end_date - self.start_date).days
+        return None
     
     @property
-    def duration_months(self):
-        """Количество месяцев аренды"""
-        return (self.end_date.year - self.start_date.year) * 12 + (self.end_date.month - self.start_date.month)
+    def is_long_term(self):
+        """Проверка, является ли бронирование долгосрочным"""
+        return self.rental_type == 'long_term'
+    
+    @property
+    def display_dates(self):
+        """Форматированное отображение дат"""
+        if self.rental_type == 'daily':
+            if self.start_date and self.end_date:
+                return f"{self.start_date.strftime('%d.%m.%Y')} - {self.end_date.strftime('%d.%m.%Y')}"
+        elif self.rental_type == 'long_term':
+            if self.long_term_start_date:
+                return f"с {self.long_term_start_date.strftime('%d.%m.%Y')} (бессрочно)"
+        return "Даты не указаны"
     
     def __str__(self):
-        return f"Бронь #{self.id} - {self.property_obj.title} ({self.tenant.username})" # type: ignore
+        rental_type_str = 'посуточно' if self.rental_type == 'daily' else 'длительная'
+        return f"Бронь #{self.id} - {self.property_obj.title} ({rental_type_str})"  # type: ignore
     
     class Meta:
         verbose_name = 'Бронирование'
         verbose_name_plural = 'Бронирования'
         ordering = ['-created_at']
-        # Защита от двойного бронирования
-        unique_together = ['property_obj', 'start_date', 'end_date']
+
 
 class UnavailableDate(models.Model):
     """
@@ -149,4 +208,4 @@ class UnavailableDate(models.Model):
         verbose_name = 'Недоступная дата'
         verbose_name_plural = 'Недоступные даты'
         ordering = ['date']
-        unique_together = ['property_obj', 'date']  # Дата может быть занята только один раз
+        unique_together = ['property_obj', 'date']

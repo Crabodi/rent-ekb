@@ -4,7 +4,7 @@ from . import views
 
 router = DefaultRouter()
 # Регистрируем ViewSet для бронирований
-router.register(r'bookings', views.BookingViewSet, basename='booking')
+router.register(r'', views.BookingViewSet, basename='booking')
 
 urlpatterns = [
     path('', include(router.urls)),

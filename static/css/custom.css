@@ -1,0 +1,193 @@
+/* static/css/custom.css */
+
+/* Подключение шрифта Century Gothic */
+@font-face {
+    font-family: 'Century Gothic';
+    src: local('Century Gothic'), local('CenturyGothic');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Применение шрифта ко всему сайту */
+body, html {
+    font-family: 'Century Gothic', 'CenturyGothic', 'Apple Gothic', 'Gill Sans', 'Gill Sans MT', sans-serif;
+}
+
+/* Для заголовков */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6,
+.navbar-brand,
+.nav-link,
+.btn,
+.card-title {
+    font-family: 'Century Gothic', 'CenturyGothic', 'Apple Gothic', 'Gill Sans', 'Gill Sans MT', sans-serif;
+}
+
+/* Для полей ввода */
+input, select, textarea, button {
+    font-family: 'Century Gothic', 'CenturyGothic', 'Apple Gothic', 'Gill Sans', 'Gill Sans MT', sans-serif;
+}
+
+/* Основные стили */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.property-card {
+    transition: transform 0.3s;
+    margin-bottom: 20px;
+}
+
+.property-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.property-card .card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+.price {
+    font-size: 1.00rem;
+    font-weight: bold;
+    color: #00983a;  
+}
+
+.footer {
+    background-color: #f3f3f4;  /* Новый цвет */
+    color: #333;  /* Темный текст для светлого фона */
+    padding: 40px 0;
+    margin-top: 60px;
+}
+
+.footer a {
+    color: #555;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    color: #662483;  /* Фирменный фиолетовый при наведении */
+}
+
+.footer h5 {
+    color: #333;
+}
+
+/* Блок с фоном (под навбаром и формой поиска) */
+.hero-bg {
+    background-image: url('/static/images/hero-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    padding: 80px 0 60px 0;  /* Увеличьте первый параметр с 40px до 80px */
+    margin-top: -76px;
+    position: relative;
+}
+
+
+.hero-bg > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Текст на фоне */
+.hero-text {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.hero-text h1 {
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.hero-text p {
+    font-size: 1.2rem;
+}
+
+/* Полупрозрачная форма фильтрации */
+.search-filters {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Кастомный цвет кнопок */
+.btn-primary {
+    background-color: #662483;
+    border-color: #662483;
+}
+
+.btn-primary:hover {
+    background-color: #4a1a5e;
+    border-color: #4a1a5e;
+}
+
+.btn-primary:active {
+    background-color: #3d144f;
+    border-color: #3d144f;
+}
+
+.btn-primary:focus {
+    background-color: #662483;
+    border-color: #662483;
+    box-shadow: 0 0 0 0.25rem rgba(102, 36, 131, 0.25);
+}
+
+.btn-outline-primary {
+    color: #662483;
+    border-color: #662483;
+}
+
+.btn-outline-primary:hover {
+    background-color: #662483;
+    border-color: #662483;
+    color: white;
+}
+
+.btn-active {
+    background-color: #662483;
+    color: white;
+}
+
+/* Цвет заголовков */
+.card-header {
+    background-color: #662483 !important;
+    border-color: #662483 !important;
+}
+
+.card-header.bg-primary {
+    background-color: #662483 !important;
+    border-color: #662483 !important;
+}
+
+.bg-primary {
+    background-color: #662483 !important;
+}
+
+.modal-header {
+    background-color: #662483;
+    color: white;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+.alert-primary {
+    background-color: #f3e8f7;
+    border-color: #662483;
+    color: #3d144f;
+}
+
+/* Результаты поиска */
+#propertiesList {
+    background-color: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}

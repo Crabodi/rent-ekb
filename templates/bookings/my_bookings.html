@@ -8,10 +8,7 @@
     
     <ul class="nav nav-tabs mb-4" id="bookingTabs">
         <li class="nav-item">
-            <button class="nav-link active" data-status="all">Все</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-status="pending">Ожидают</button>
+            <button class="nav-link active" data-status="pending">Ожидают подтверждения</button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-status="confirmed">Подтверждены</button>
@@ -37,11 +34,15 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    console.log('My bookings page loaded');
-    let currentStatus = 'all';
+    let currentStatus = 'pending';
+    let currentUserRole = '{{ user.role }}';
+    let allBookings = [];
+    
+    function getAccessToken() {
+        return sessionStorage.getItem('access_token') || '{{ access_token|default:"" }}';
+    }
     
     function loadMyBookings() {
-        // Показываем загрузку
         $('#bookingsList').html(`
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
@@ -50,58 +51,53 @@ $(document).ready(function() {
             </div>
         `);
         
+        const token = getAccessToken();
+        
         $.ajax({
             url: API_URL + 'bookings/',
             method: 'GET',
             headers: {
+                'Authorization': 'Bearer ' + token,
                 'X-CSRFToken': getCookie('csrftoken')
             },
             success: function(data) {
-                console.log('Raw response:', data);
-                
-                // Проверяем формат данных
-                let bookings = [];
-                if (Array.isArray(data)) {
-                    bookings = data;
-                } else if (data.results && Array.isArray(data.results)) {
-                    // Для пагинированных ответов
-                    bookings = data.results;
-                } else if (data.data && Array.isArray(data.data)) {
-                    bookings = data.data;
-                } else {
-                    console.warn('Unexpected data format:', data);
-                }
-                
-                console.log('Loaded bookings:', bookings.length);
-                displayBookings(bookings);
+                console.log('Bookings loaded:', data);
+                allBookings = Array.isArray(data) ? data : (data.results || []);
+                displayBookings();
             },
             error: function(xhr, status, error) {
                 console.error('Error loading bookings:', error);
-                console.error('Status:', status);
-                console.error('Response:', xhr.responseText);
-                $('#bookingsList').html(`
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i> 
-                        Ошибка загрузки бронирований: ${error}
-                        <br><small>Пожалуйста, попробуйте позже или войдите заново.</small>
-                    </div>
-                `);
+                if (xhr.status === 401) {
+                    $('#bookingsList').html(`
+                        <div class="alert alert-warning text-center">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Сессия истекла. Пожалуйста, 
+                            <a href="/login/">войдите</a> заново.
+                        </div>
+                    `);
+                } else {
+                    $('#bookingsList').html(`
+                        <div class="alert alert-danger text-center">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Ошибка загрузки бронирований: ${error}
+                        </div>
+                    `);
+                }
             }
         });
     }
     
-    function displayBookings(bookings) {
-        // Фильтруем по статусу
-        let filteredBookings = bookings;
-        if (currentStatus !== 'all') {
-            filteredBookings = bookings.filter(b => b.status === currentStatus);
-        }
-        
-        if (!filteredBookings || filteredBookings.length === 0) {
+    function displayBookings() {
+        let filteredBookings = allBookings.filter(b => b.status === currentStatus);
+
+        if (filteredBookings.length === 0) {
+            let message = 'Нет бронирований';
+            if (currentStatus === 'pending') {
+                message = 'Нет ожидающих подтверждения бронирований';
+            }
             $('#bookingsList').html(`
                 <div class="alert alert-info text-center">
-                    <i class="bi bi-info-circle"></i> 
-                    У вас пока нет бронирований со статусом "${getStatusText(currentStatus)}".
+                    <i class="bi bi-info-circle"></i> ${message}
                 </div>
             `);
             return;
@@ -109,54 +105,69 @@ $(document).ready(function() {
         
         let html = '<div class="list-group">';
         filteredBookings.forEach(booking => {
-            const statusClass = {
-                'pending': 'warning',
-                'confirmed': 'success',
-                'cancelled': 'danger',
-                'completed': 'info'
-            }[booking.status] || 'secondary';
-            
-            const statusText = {
-                'pending': 'Ожидает подтверждения',
-                'confirmed': 'Подтверждено',
-                'cancelled': 'Отменено',
-                'completed': 'Завершено'
-            }[booking.status] || booking.status;
-            
-            // Получаем URL изображения
-            let imageUrl = 'https://via.placeholder.com/100x100?text=Нет+фото';
-            if (booking.property_main_image) {
-                imageUrl = booking.property_main_image;
-            } else if (booking.property_details && booking.property_details.main_image) {
-                imageUrl = booking.property_details.main_image;
-            }
-            
-            // Получаем название объекта
-            let propertyTitle = 'Объект не указан';
-            if (booking.property_title) {
-                propertyTitle = booking.property_title;
-            } else if (booking.property_details && booking.property_details.title) {
-                propertyTitle = booking.property_details.title;
-            }
+            const isOwner = (currentUserRole === 'landlord' || currentUserRole === 'both');
+            const isPending = booking.status === 'pending';
             
             html += `
                 <div class="list-group-item">
-                    <div class="row align-items-center">
-                        <div class="col-md-2">
-                            <img src="${imageUrl}" class="img-fluid rounded" style="max-height: 80px; object-fit: cover; width: 100%;">
-                        </div>
-                        <div class="col-md-6">
-                            <h5 class="mb-1">${escapeHtml(propertyTitle)}</h5>
-                            <p class="mb-1 text-muted">
-                                <i class="bi bi-calendar"></i> ${booking.start_date} — ${booking.end_date}
+                    <div class="row align-items-start">
+                        <div class="col-md-8">
+                            <h5 class="mb-1">
+                                <a href="/property/${booking.property_obj_id || booking.property_obj}/" target="_blank" class="text-decoration-none">
+                                    ${escapeHtml(booking.property_title)}
+                                    <i class="bi bi-box-arrow-up-right" style="font-size: 12px;"></i>
+                                </a>
+                            </h5>
+                            <p class="mb-1">
+                                <i class="bi bi-calendar"></i> ${escapeHtml(booking.display_dates || 'Даты не указаны')}
                             </p>
-                            <p class="mb-1"><strong>${parseFloat(booking.total_price).toLocaleString('ru-RU')} ₽</strong></p>
+                            <p class="mb-1">
+                                <strong>${parseFloat(booking.total_price).toLocaleString('ru-RU')} ₽</strong>
+                            </p>
+                            ${booking.tenant_name && isOwner ? `
+                                <p class="mb-1 text-muted">
+                                    <i class="bi bi-person"></i> Арендатор: ${escapeHtml(booking.tenant_name)}
+                                </p>
+                            ` : ''}
+                            ${booking.tenant_comment ? `
+                                <p class="mb-1 text-muted">
+                                    <i class="bi bi-chat"></i> Комментарий: ${escapeHtml(booking.tenant_comment)}
+                                </p>
+                            ` : ''}
+                            ${booking.owner_response_comment ? `
+                                <p class="mb-1 text-info">
+                                    <i class="bi bi-reply"></i> Ответ владельца: ${escapeHtml(booking.owner_response_comment)}
+                                </p>
+                            ` : ''}
                         </div>
                         <div class="col-md-4 text-end">
-                            <span class="badge bg-${statusClass} fs-6">${statusText}</span>
-                            ${booking.status === 'pending' ? 
-                                `<button class="btn btn-sm btn-danger mt-2" onclick="cancelBooking(${booking.id})">Отменить</button>` : 
-                                ''}
+                            <span class="badge bg-${getStatusClass(booking.status)} fs-6 mb-2">
+                                ${getStatusText(booking.status)}
+                            </span>
+                            ${isOwner && isPending ? `
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-success me-1" onclick="actionBooking(${booking.id}, 'confirm', '${escapeHtml(booking.tenant_name || booking.tenant?.username || 'арендатора')}')">
+                                        <i class="bi bi-check-circle"></i> Подтвердить
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="actionBooking(${booking.id}, 'cancel', '${escapeHtml(booking.tenant_name || booking.tenant?.username || 'арендатора')}')">
+                                        <i class="bi bi-x-circle"></i> Отказать
+                                    </button>
+                                </div>
+                            ` : ''}
+                            ${!isOwner && isPending ? `
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-danger" onclick="actionBooking(${booking.id}, 'cancel_tenant', '${escapeHtml(booking.property_title)}')">
+                                        <i class="bi bi-x-circle"></i> Отменить
+                                    </button>
+                                </div>
+                            ` : ''}
+                            ${!isPending ? `
+                                <div class="mt-2">
+                                    <a href="/property/${booking.property_obj_id || booking.property_obj}/" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-eye"></i> Просмотр объявления
+                                    </a>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -166,35 +177,64 @@ $(document).ready(function() {
         $('#bookingsList').html(html);
     }
     
-    window.cancelBooking = function(id) {
-        if (confirm('Отменить бронирование?')) {
-            $.ajax({
-                url: API_URL + `bookings/${id}/cancel/`,
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                success: function(response) {
-                    showNotification('Бронирование отменено', 'success');
-                    loadMyBookings();
-                },
-                error: function(xhr) {
-                    console.error('Cancel error:', xhr);
-                    showNotification('Ошибка при отмене бронирования', 'danger');
-                }
-            });
+    window.actionBooking = function(bookingId, action, name) {
+        let message = '';
+        let url = '';
+        
+        if (action === 'confirm') {
+            message = `Подтверждение бронирования для ${name}\n\nВведите комментарий (необязательно):`;
+            url = API_URL + `bookings/${bookingId}/confirm/`;
+        } else {
+            message = `Отмена бронирования для ${name}\n\nВведите причину (необязательно):`;
+            url = API_URL + `bookings/${bookingId}/cancel/`;
         }
+        
+        const comment = prompt(message);
+        const token = getAccessToken();
+        
+        $.ajax({
+            url: url,
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            data: JSON.stringify({ comment: comment || '', reason: comment || '' }),
+            success: function(response) {
+                showNotification(response.message, 'success');
+                loadMyBookings();
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON;
+                if (xhr.status === 401) {
+                    showNotification('Сессия истекла. Пожалуйста, войдите заново.', 'warning');
+                    setTimeout(() => window.location.href = '/login/', 2000);
+                } else {
+                    showNotification(error?.error || error?.detail || 'Ошибка при выполнении операции', 'danger');
+                }
+            }
+        });
     };
     
-    function getStatusText(status) {
-        const statusMap = {
-            'all': 'все',
-            'pending': 'ожидающие',
-            'confirmed': 'подтвержденные',
-            'cancelled': 'отмененные',
-            'completed': 'завершенные'
+    function getStatusClass(status) {
+        const classes = {
+            'pending': 'warning',
+            'confirmed': 'success',
+            'cancelled': 'danger',
+            'completed': 'info'
         };
-        return statusMap[status] || status;
+        return classes[status] || 'secondary';
+    }
+    
+    function getStatusText(status) {
+        const texts = {
+            'pending': 'Ожидает подтверждения',
+            'confirmed': 'Подтверждено',
+            'cancelled': 'Отменено',
+            'completed': 'Завершено'
+        };
+        return texts[status] || status;
     }
     
     function escapeHtml(text) {
@@ -204,15 +244,13 @@ $(document).ready(function() {
         return div.innerHTML;
     }
     
-    // Обработка переключения табов
     $('#bookingTabs .nav-link').on('click', function() {
         $('#bookingTabs .nav-link').removeClass('active');
         $(this).addClass('active');
         currentStatus = $(this).data('status');
-        loadMyBookings();
+        displayBookings();
     });
     
-    // Загружаем данные
     loadMyBookings();
 });
 </script>

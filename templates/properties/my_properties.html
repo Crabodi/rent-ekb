@@ -24,33 +24,92 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    console.log('My properties page loaded');
+    
+    // Отображаем информацию о пользователе
+    $('#currentUsername').text(CURRENT_USERNAME || 'Неизвестно');
+    $('#currentUserId').text(CURRENT_USER_ID || 'Неизвестно');
+    $('#currentUserRole').text(CURRENT_USER_ROLE || 'Неизвестно');
+    
+    // Проверка авторизации
+    if (!CURRENT_USER_ID) {
+        $('#propertiesList').html(`
+            <div class="alert alert-warning text-center">
+                <i class="bi bi-exclamation-triangle"></i> 
+                Для просмотра объявлений необходимо 
+                <a href="/login/">войти</a> в систему.
+            </div>
+        `);
+        return;
+    }
+    
     loadMyProperties();
     
     function loadMyProperties() {
+        $('#propertiesList').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            </div>
+        `);
+        
+        console.log('Loading properties for user ID:', CURRENT_USER_ID);
+        
         $.ajax({
-            url: '/api/properties/my_properties/',
+            url: API_URL + 'properties/my_properties/',
             method: 'GET',
             headers: {
+                'Authorization': 'Bearer ' + getAccessToken(),
                 'X-CSRFToken': getCookie('csrftoken')
             },
             success: function(data) {
                 console.log('Loaded properties:', data.length);
-                displayProperties(data);
+                // Загружаем бронирования для проверки статуса
+                loadBookingsAndDisplay(data);
             },
             error: function(xhr, status, error) {
                 console.error('Error loading properties:', error);
-                $('#propertiesList').html(`
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i> 
-                        Ошибка загрузки объявлений. Пожалуйста, авторизуйтесь.
-                    </div>
-                `);
+                console.error('Status:', xhr.status);
+                
+                if (xhr.status === 401) {
+                    $('#propertiesList').html(`
+                        <div class="alert alert-warning text-center">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Сессия истекла. Пожалуйста, 
+                            <a href="/login/">войдите</a> заново.
+                        </div>
+                    `);
+                } else {
+                    $('#propertiesList').html(`
+                        <div class="alert alert-danger text-center">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Ошибка загрузки объявлений. Пожалуйста, попробуйте позже.
+                        </div>
+                    `);
+                }
             }
         });
     }
     
-    function displayProperties(properties) {
+    function loadBookingsAndDisplay(properties) {
+        $.ajax({
+            url: API_URL + 'bookings/',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + getAccessToken(),
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(bookingsData) {
+                const bookings = Array.isArray(bookingsData) ? bookingsData : (bookingsData.results || []);
+                displayProperties(properties, bookings);
+            },
+            error: function() {
+                displayProperties(properties, []);
+            }
+        });
+    }
+    
+    function displayProperties(properties, bookings) {
         if (!properties || properties.length === 0) {
             $('#propertiesList').html(`
                 <div class="alert alert-info text-center">
@@ -64,7 +123,7 @@ $(document).ready(function() {
         
         let html = '<div class="row">';
         properties.forEach(property => {
-            let imageUrl = 'https://via.placeholder.com/300x200?text=Нет+фото';
+            let imageUrl = '/static/images/no-image.svg';
             if (property.main_image) {
                 imageUrl = property.main_image;
             }
@@ -73,6 +132,16 @@ $(document).ready(function() {
                 '<span class="badge bg-success">Активно</span>' : 
                 '<span class="badge bg-secondary">Неактивно</span>';
             
+            // Проверяем, есть ли активное долгосрочное бронирование
+            const activeBooking = bookings.find(b => 
+                b.property_obj === property.id && 
+                b.rental_type === 'long_term' && 
+                b.status === 'confirmed'
+            );
+            
+            const bookingBadge = activeBooking ? 
+                '<span class="badge bg-warning ms-2">ЗАБРОНИРОВАНО</span>' : '';
+            
             html += `
                 <div class="col-md-4 mb-4">
                     <div class="card property-card h-100">
@@ -80,7 +149,7 @@ $(document).ready(function() {
                         <div class="card-body">
                             <h5 class="card-title">${escapeHtml(property.title)}</h5>
                             <p class="price">${property.price_display || 'Цена не указана'}</p>
-                            <p>${statusBadge}</p>
+                            <p>${statusBadge} ${bookingBadge}</p>
                             <div class="btn-group w-100">
                                 <a href="/property/${property.id}/" class="btn btn-outline-primary btn-sm">Просмотр</a>
                                 <button class="btn btn-outline-danger btn-sm" onclick="deleteProperty(${property.id})">Удалить</button>
@@ -97,17 +166,23 @@ $(document).ready(function() {
     window.deleteProperty = function(id) {
         if (confirm('Вы уверены, что хотите удалить это объявление?')) {
             $.ajax({
-                url: `/api/properties/${id}/`,
+                url: API_URL + `properties/${id}/`,
                 method: 'DELETE',
                 headers: {
+                    'Authorization': 'Bearer ' + getAccessToken(),
                     'X-CSRFToken': getCookie('csrftoken')
                 },
                 success: function() {
                     showNotification('Объявление удалено', 'success');
                     loadMyProperties();
                 },
-                error: function() {
-                    showNotification('Ошибка при удалении', 'danger');
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        showNotification('Сессия истекла. Пожалуйста, войдите заново.', 'warning');
+                        setTimeout(() => window.location.href = '/login/', 2000);
+                    } else {
+                        showNotification('Ошибка при удалении', 'danger');
+                    }
                 }
             });
         }
