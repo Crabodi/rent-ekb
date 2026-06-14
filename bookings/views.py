@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -34,11 +35,10 @@ class BookingViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        # Владелец видит бронирования своих объектов
-        if user.role in ['landlord', 'both']:  # type: ignore
-            return Booking.objects.filter(property_obj__owner=user)
-        # Арендатор видит свои бронирования
-        return Booking.objects.filter(tenant=user)
+        # Показываем бронирования, где пользователь либо арендатор, либо владелец объекта
+        return Booking.objects.filter(
+            models.Q(tenant=user) | models.Q(property_obj__owner=user)
+        ).distinct()
     
     def perform_create(self, serializer):
         property_obj = serializer.validated_data['property_obj']

@@ -105,8 +105,9 @@ $(document).ready(function() {
         
         let html = '<div class="list-group">';
         filteredBookings.forEach(booking => {
-            const isOwner = (currentUserRole === 'landlord' || currentUserRole === 'both');
             const isPending = booking.status === 'pending';
+            // Используем поле is_owner из API
+            const isUserOwner = booking.is_owner === true;
             
             html += `
                 <div class="list-group-item">
@@ -124,7 +125,7 @@ $(document).ready(function() {
                             <p class="mb-1">
                                 <strong>${parseFloat(booking.total_price).toLocaleString('ru-RU')} ₽</strong>
                             </p>
-                            ${booking.tenant_name && isOwner ? `
+                            ${booking.tenant_name ? `
                                 <p class="mb-1 text-muted">
                                     <i class="bi bi-person"></i> Арендатор: ${escapeHtml(booking.tenant_name)}
                                 </p>
@@ -144,17 +145,17 @@ $(document).ready(function() {
                             <span class="badge bg-${getStatusClass(booking.status)} fs-6 mb-2">
                                 ${getStatusText(booking.status)}
                             </span>
-                            ${isOwner && isPending ? `
+                            ${isUserOwner && isPending ? `
                                 <div class="mt-2">
-                                    <button class="btn btn-sm btn-success me-1" onclick="actionBooking(${booking.id}, 'confirm', '${escapeHtml(booking.tenant_name || booking.tenant?.username || 'арендатора')}')">
+                                    <button class="btn btn-sm btn-success me-1" onclick="actionBooking(${booking.id}, 'confirm', '${escapeHtml(booking.tenant_name || 'арендатора')}')">
                                         <i class="bi bi-check-circle"></i> Подтвердить
                                     </button>
-                                    <button class="btn btn-sm btn-danger" onclick="actionBooking(${booking.id}, 'cancel', '${escapeHtml(booking.tenant_name || booking.tenant?.username || 'арендатора')}')">
+                                    <button class="btn btn-sm btn-danger" onclick="actionBooking(${booking.id}, 'cancel', '${escapeHtml(booking.tenant_name || 'арендатора')}')">
                                         <i class="bi bi-x-circle"></i> Отказать
                                     </button>
                                 </div>
                             ` : ''}
-                            ${!isOwner && isPending ? `
+                            ${!isUserOwner && isPending ? `
                                 <div class="mt-2">
                                     <button class="btn btn-sm btn-danger" onclick="actionBooking(${booking.id}, 'cancel_tenant', '${escapeHtml(booking.property_title)}')">
                                         <i class="bi bi-x-circle"></i> Отменить

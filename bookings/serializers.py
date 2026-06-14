@@ -26,7 +26,7 @@ class BookingSerializer(serializers.ModelSerializer):
             'rental_type', 'start_date', 'end_date', 'nights_count',
             'long_term_start_date', 'total_price', 'status', 
             'contract_signed', 'contract_file', 'tenant_comment', 'owner_comment',
-            'owner_response_comment',  # Добавляем новое поле
+            'owner_response_comment',
             'duration_days', 'display_dates', 'is_long_term',
             'created_at', 'updated_at'
         ]
@@ -40,6 +40,8 @@ class BookingListSerializer(serializers.ModelSerializer):
     tenant_name = serializers.CharField(source='tenant.username', read_only=True)
     display_dates = serializers.ReadOnlyField()
     rental_type_display = serializers.SerializerMethodField()
+    is_owner = serializers.SerializerMethodField()
+    tenant_comment = serializers.CharField(read_only=True)
     
     class Meta:
         model = Booking
@@ -48,7 +50,7 @@ class BookingListSerializer(serializers.ModelSerializer):
             'tenant', 'tenant_name', 'rental_type', 'rental_type_display',
             'start_date', 'end_date', 'long_term_start_date',
             'total_price', 'status', 'display_dates', 'created_at',
-            'owner_response_comment'  # Добавляем для отображения ответа владельца
+            'owner_response_comment', 'is_owner', 'tenant_comment'  # ДОБАВЛЕНО tenant_comment
         ]
     
     def get_property_main_image(self, obj):
@@ -58,6 +60,13 @@ class BookingListSerializer(serializers.ModelSerializer):
     
     def get_rental_type_display(self, obj):
         return 'Посуточно' if obj.rental_type == 'daily' else 'Длительная (бессрочно)'
+    
+    def get_is_owner(self, obj):
+        """Определяет, является ли текущий пользователь владельцем объекта"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            return obj.property_obj.owner == request.user
+        return False
 
 
 class BookingCreateSerializer(serializers.ModelSerializer):
