@@ -48,7 +48,8 @@ class PropertyListSerializer(serializers.ModelSerializer):
             'id', 'title', 'property_type', 'rooms', 
             'city_name', 'district_name', 'price_display',
             'location_display', 'main_image', 'owner_name',
-            'owner_avatar', 'created_at', 'is_available', 'rental_term'
+            'owner_avatar', 'created_at', 'is_available', 'rental_term',
+            'is_active'  # ДОБАВЬТЕ ЭТУ СТРОКУ
         ]
     
     def get_main_image(self, obj):
@@ -92,7 +93,8 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
             'address', 'description', 'rental_term', 'price_per_day',
             'price_per_month', 'owner', 'owner_name', 'owner_phone',
             'owner_email', 'owner_avatar', 'price_display', 'location_display',
-            'images', 'is_active', 'created_at', 'updated_at', 'is_available'
+            'images', 'is_active', 'created_at', 'updated_at', 'is_available',
+            'is_active'
         ]
         read_only_fields = ['owner', 'created_at', 'updated_at']
 
