@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Как снять недвижимость - Рент.ру{% endblock %}
+
+{% block extra_css %}
+<style>
+    .how-to-header {
+        background-color: #662483;
+        padding: 60px 0;
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .how-to-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+    
+    .how-to-header p {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.2rem;
+    }
+    
+    .how-to-content {
+        background-color: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
+        margin-bottom: 60px;
+    }
+    
+    .step {
+        margin-bottom: 40px;
+        padding-bottom: 30px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .step:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .step-number {
+        display: inline-block;
+        background-color: #662483;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 40px;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-right: 15px;
+    }
+    
+    .step-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+    
+    .step-content {
+        padding-left: 55px;
+        color: #555;
+        line-height: 1.6;
+    }
+    
+    .step-content ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .step-content li {
+        margin-bottom: 12px;
+        position: relative;
+        padding-left: 25px;
+    }
+    
+    .step-content li:before {
+        content: "•";
+        color: #662483;
+        font-size: 1.2rem;
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+    }
+    
+    .step-content strong {
+        color: #662483;
+        font-weight: bold;
+    }
+    
+    .warning-box {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px 20px;
+        margin-top: 30px;
+        border-radius: 8px;
+    }
+    
+    .warning-box p {
+        margin: 0;
+        color: #856404;
+    }
+    
+    @media (max-width: 768px) {
+        .how-to-content {
+            padding: 25px;
+        }
+        
+        .step-content {
+            padding-left: 0;
+        }
+        
+        .step-title {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="how-to-header">
+    <div class="container">
+        <h1>Как снять квартиру надёжно и без обмана</h1>
+        <p>Советы для тех, кто ищет жильё впервые</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="how-to-content">
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">1</span> Определите бюджет
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Учтите: арендная плата + залог (обычно = месячная ставка) + комиссия агенту (если есть).</li>
+                    <li>Коммунальные платежи могут быть сверху (уточните заранее).</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">2</span> Ищите безопасно
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Не переводите предоплату до просмотра квартиры.</li>
+                    <li>Проверяйте документы собственника: паспорт + выписка из ЕГРН (закажите онлайн за 5 минут).</li>
+                    <li>Избегайте слишком низких цен — скорее всего, «развод» или субаренда без права подселения.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">3</span> Осмотрите квартиру
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Откройте краны, спустите воду в унитазе, проверьте розетки и замки.</li>
+                    <li>Послушайте шум от соседей и с улицы (утром и вечером).</li>
+                    <li>Сфотографируйте недостатки (царапины, пятна), чтобы не заплатили за ваш счёт.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">4</span> Читайте договор
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Внимательно: пункты про штрафы, визиты собственника, сумму повышения платы.</li>
+                    <li>Убедитесь, что срок указан (если без срока — вас могут выселить за 3 дня).</li>
+                    <li>Не подписывайте пустые листы или договор без печати и подписей.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">5</span> Переезжайте с актом
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Составьте с собственником акт приёма: показания счётчиков, список мебели, состояние стен/пола.</li>
+                    <li>Сделайте общее фото счётчиков и крупных дефектов на телефон.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">6</span> Живите спокойно
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Вовремя платите, сохраняйте квитанции об оплате.</li>
+                    <li>Предупреждайте хозяина о поломках письменно.</li>
+                    <li>При выезде предупредите за 30 дней, если в договоре не сказано иначе.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="warning-box">
+            <p>⚠️ <strong>Важно:</strong> Всегда доверяйте своей интуиции. Если что-то кажется подозрительным — лучше отказаться от сделки и найти другой вариант.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

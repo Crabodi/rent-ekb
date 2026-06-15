@@ -1,5 +1,7 @@
+import markdown
 from rest_framework import serializers
 from .models import City, District, Property, PropertyImage
+from django.utils.safestring import mark_safe
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
@@ -49,7 +51,7 @@ class PropertyListSerializer(serializers.ModelSerializer):
             'city_name', 'district_name', 'price_display',
             'location_display', 'main_image', 'owner_name',
             'owner_avatar', 'created_at', 'is_available', 'rental_term',
-            'is_active'  # ДОБАВЬТЕ ЭТУ СТРОКУ
+            'is_active'
         ]
     
     def get_main_image(self, obj):
@@ -85,16 +87,16 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
     location_display = serializers.ReadOnlyField()
     images = PropertyImageSerializer(many=True, read_only=True)
     is_available = serializers.SerializerMethodField()
+    description_html = serializers.SerializerMethodField()  # ДОБАВЛЕНО
     
     class Meta:
         model = Property
         fields = [
             'id', 'title', 'property_type', 'rooms', 'city', 'district',
-            'address', 'description', 'rental_term', 'price_per_day',
+            'address', 'description', 'description_html', 'rental_term', 'price_per_day',
             'price_per_month', 'owner', 'owner_name', 'owner_phone',
             'owner_email', 'owner_avatar', 'price_display', 'location_display',
-            'images', 'is_active', 'created_at', 'updated_at', 'is_available',
-            'is_active'
+            'images', 'is_active', 'created_at', 'updated_at', 'is_available'
         ]
         read_only_fields = ['owner', 'created_at', 'updated_at']
 
@@ -107,6 +109,12 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
                 status__in=['pending', 'confirmed']
             ).exists()
         return True
+    
+    def get_description_html(self, obj):
+        """Конвертирует Markdown в HTML"""
+        if obj.description:
+            return mark_safe(markdown.markdown(obj.description, extensions=['extra', 'codehilite']))
+        return ''
 
 
 class PropertyCreateSerializer(serializers.ModelSerializer):

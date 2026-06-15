@@ -39,7 +39,9 @@ urlpatterns = [
     path('my-bookings/', views.MyBookingsView.as_view(), name='my_bookings'),
     path('property/<int:pk>/', views.PropertyDetailView.as_view(), name='property_detail'),
     path('property/create/', views.CreatePropertyView.as_view(), name='create_property'),
-      
+
+    path('how-to-rent-out/', views.HowToRentOutView.as_view(), name='how_to_rent_out'),  
+    path('how-to-rent/', views.HowToRentView.as_view(), name='how_to_rent'),
 ]
 
 if settings.DEBUG:

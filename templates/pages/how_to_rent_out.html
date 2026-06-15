@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Как сдать недвижимость - Рент.ру{% endblock %}
+
+{% block extra_css %}
+<style>
+    .how-to-header {
+        background-color: #662483;
+        padding: 60px 0;
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .how-to-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+    
+    .how-to-header p {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.2rem;
+    }
+    
+    .how-to-content {
+        background-color: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
+        margin-bottom: 60px;
+    }
+    
+    .step {
+        margin-bottom: 40px;
+        padding-bottom: 30px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .step:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .step-number {
+        display: inline-block;
+        background-color: #662483;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 40px;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-right: 15px;
+    }
+    
+    .step-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+    
+    .step-content {
+        padding-left: 55px;
+        color: #555;
+        line-height: 1.6;
+    }
+    
+    .step-content ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .step-content li {
+        margin-bottom: 12px;
+        position: relative;
+        padding-left: 25px;
+    }
+    
+    .step-content li:before {
+        content: "•";
+        color: #662483;
+        font-size: 1.2rem;
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+    }
+    
+    .step-content strong {
+        color: #662483;
+        font-weight: bold;
+    }
+    
+    @media (max-width: 768px) {
+        .how-to-content {
+            padding: 25px;
+        }
+        
+        .step-content {
+            padding-left: 0;
+        }
+        
+        .step-title {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="how-to-header">
+    <div class="container">
+        <h1>Как быстро сдать квартиру без рисков</h1>
+        <p>Пошаговая инструкция для успешной сдачи недвижимости</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="how-to-content">
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">1</span> Подготовьте объект
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Сделайте качественное фото (свет, ракурсы) и короткое видео.</li>
+                    <li>Уберите личные вещи, сделайте косметический ремонт при необходимости.</li>
+                    <li>Проверьте исправность сантехники, розеток, бытовой техники.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">2</span> Установите оптимальную цену
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Изучите похожие варианты в вашем районе.</li>
+                    <li>Учитывайте состояние, этаж, инфраструктуру и наличие мебели.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">3</span> Оформите объявление
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Напишите честное описание: этаж, метраж, сколько комнат, что включено в платеж.</li>
+                    <li>Обязательно укажите условия: можно ли с детьми/животными, нужна ли регистрация.</li>
+                    <li>Добавьте план квартиры (схему комнат).</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">4</span> Проверьте будущих жильцов
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Уточните, кто будет жить (всех взрослых внесите в договор).</li>
+                    <li>Позвоните предыдущему арендодателю для рекомендации.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">5</span> Составьте договор
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Пропишите все: сумму, дату оплаты, залог, кто оплачивает коммунальные платежи.</li>
+                    <li>Приложите акт приема-передачи с показаниями счетчиков.</li>
+                    <li>Сделайте опись имущества с состоянием каждого предмета.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">6</span> После заселения
+            </div>
+            <div class="step-content">
+                <ul>
+                    <li>Один экземпляр договора оставьте себе, второй — жильцам.</li>
+                    <li>Зарегистрируйте договор в Росреестре, если срок больше года (по желанию).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

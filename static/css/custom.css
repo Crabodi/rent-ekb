@@ -228,3 +228,43 @@ input, select, textarea, button {
 .carousel-item img:hover {
     opacity: 0.95;
 }
+
+/* Стили для Markdown описания */
+.property-description {
+    line-height: 1.6;
+}
+
+.property-description h1, .property-description h2, .property-description h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.property-description ul, .property-description ol {
+    margin-left: 20px;
+}
+
+.property-description code {
+    background-color: #f4f4f4;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.property-description pre {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+
+.property-description blockquote {
+    border-left: 4px solid #662483;
+    margin: 10px 0;
+    padding-left: 20px;
+    color: #666;
+}
+
+.property-description img {
+    max-width: 100%;
+    height: auto;
+}

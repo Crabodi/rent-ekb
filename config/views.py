@@ -114,3 +114,11 @@ class PropertyDetailView(TemplateView):
 class CreatePropertyView(LoginRequiredMixin, TemplateView):
     template_name = 'properties/create.html'
     login_url = 'login'
+
+class HowToRentOutView(TemplateView):
+    """Страница "Как сдать недвижимость" """
+    template_name = 'pages/how_to_rent_out.html'
+
+class HowToRentView(TemplateView):
+    """Страница "Как снять недвижимость" """
+    template_name = 'pages/how_to_rent.html'

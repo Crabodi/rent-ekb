@@ -543,7 +543,13 @@ $(document).ready(function() {
     function displayPropertyDetails(property) {
         $('#propertyTitle').text(property.title || 'Без названия');
         $('#propertyLocation').html('<i class="bi bi-geo-alt"></i> ' + (property.location_display || 'Адрес не указан'));
-        $('#propertyDescription').text(property.description || 'Описание отсутствует');
+        if (property.description_html) {
+            $('#propertyDescription').html(property.description_html);
+        } else if (property.description) {
+            $('#propertyDescription').html(property.description.replace(/\n/g, '<br>'));
+        } else {
+            $('#propertyDescription').html('Описание отсутствует');
+        }
         $('#propertyAddress').text(property.address || 'Не указан');
         $('#propertyRooms').text(property.rooms || 0);
         $('#propertyPrice').text(property.price_display || 'Цена не указана');
